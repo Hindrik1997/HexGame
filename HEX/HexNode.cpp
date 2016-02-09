@@ -172,6 +172,7 @@ auto HexNode::CalculateConnections() -> void
 									{
 										//Weird error occured monsieur!
 										MessageBox(NULL,L"Ongeldige HexGrid structuur. De code is wss stuk ofzo.", L"Fout!", MB_OK | MB_ICONEXCLAMATION);
+										return;
 									}
 								}
 							}
