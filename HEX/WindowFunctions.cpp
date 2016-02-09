@@ -1,6 +1,6 @@
 #include "WindowFunctions.h"
 
-bool CheckMessage()
+auto CheckMessage() -> bool
 {
 	MSG Msg;
 	if (PeekMessage(&Msg, NULL, NULL, NULL, PM_REMOVE))
@@ -13,7 +13,7 @@ bool CheckMessage()
 	return true;
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT
 {
 	switch (msg)
 	{
@@ -39,7 +39,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-HWND InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring WindowTitle, int Width, int Height)
+auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring WindowTitle, int Width, int Height) -> HWND
 {
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -63,10 +63,10 @@ HWND InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 	}
 	
 	HWND hwnd = CreateWindowEx(
-		WS_EX_CLIENTEDGE,
+		NULL,
 		WindowClassName.c_str(),
 		WindowTitle.c_str(),
-		WS_OVERLAPPEDWINDOW,
+		WS_SYSMENU, //Enkel sluit button, verder default
 		CW_USEDEFAULT, CW_USEDEFAULT, Width, Height,
 		NULL, NULL, hInstance, NULL);
 

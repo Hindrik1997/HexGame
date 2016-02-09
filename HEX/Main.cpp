@@ -1,4 +1,5 @@
 #include "WindowFunctions.h"
+#include "HexGrid.h"
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
@@ -17,6 +18,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
 	HDC hdc = GetDC(hwnd);
+
+	HexGrid h(11);
+
 	do
 	{
 		

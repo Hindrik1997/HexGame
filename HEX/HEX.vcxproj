@@ -152,10 +152,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="HexGrid.cpp" />
+    <ClCompile Include="HexNode.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="WindowFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HexGrid.h" />
+    <ClInclude Include="HexNode.h" />
     <ClInclude Include="WindowFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
