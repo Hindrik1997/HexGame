@@ -1,23 +1,28 @@
-#include <windows.h>
 #include "WindowFunctions.h"
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine, int nCmdShow)
+INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
-	MSG Msg;
 	wstring ClassName = { L"HXC" };
 	wstring WindowTitle = {L"H3X: The Game"};
+	int Width = 800;
+	int Height = 600;
 
-
-	HWND hwnd = InitializeWindow(hInstance, ClassName, WindowTitle, 800,600 );
-
+	HWND hwnd = InitializeWindow(hInstance, ClassName, WindowTitle, Width,Height);
+	if (hwnd == NULL)
+	{
+		MessageBox(NULL, L"Window handle was zero?", L"Yo Dawg, Weird Error man!", MB_ICONEXCLAMATION | MB_OK);
+		return -1;
+	}
+	
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
-
-	while (GetMessage(&Msg, NULL, 0, 0) > 0)
+	HDC hdc = GetDC(hwnd);
+	do
 	{
-		TranslateMessage(&Msg);
-		DispatchMessage(&Msg);
-	}
-	return (int)Msg.wParam;
+		
+	} 
+	while (CheckMessage() != false);
+
+	ReleaseDC(hwnd,hdc);
+	return 0;
 }

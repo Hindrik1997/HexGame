@@ -1,9 +1,32 @@
 #include "WindowFunctions.h"
 
+bool CheckMessage()
+{
+	MSG Msg;
+	if (PeekMessage(&Msg, NULL, NULL, NULL, PM_REMOVE))
+	{
+		if (Msg.message == WM_QUIT)
+			return false;
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
+	}
+	return true;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
+		case WM_KEYDOWN:
+			if (wParam == VK_ESCAPE)
+			{
+				if (MessageBox(NULL, L"Are you sure you want to exit?", L"Really?", MB_YESNO | MB_ICONQUESTION) == IDYES) 
+				{
+					DestroyWindow(hwnd);
+					PostQuitMessage(0);
+				}
+			}
+			return 0;
 		case WM_CLOSE:
 			DestroyWindow(hwnd);
 			break;
