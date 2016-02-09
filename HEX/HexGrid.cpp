@@ -24,16 +24,16 @@ auto HexGrid::CreateGrid() -> void
 		return;
 	}
 	m_Grid.clear();
-	for (unsigned int iRow = 0; iRow < m_Size; ++iRow)
+	for (unsigned iRow = 0; iRow < m_Size; ++iRow)
 	{
 		vector<HexNode> row;
-		for (unsigned int iColumn = 0; iColumn < m_Size; ++iColumn)
+		for (unsigned iColumn = 0; iColumn < m_Size; ++iColumn)
 		{
 			row.push_back(HexNode(iRow,iColumn,(*this)));
 		}
 		m_Grid.push_back(row);
 	}
-	for (unsigned int i = 0; i < get_Size(); ++i)
+	for (unsigned i = 0; i < get_Size(); ++i)
 	{
 		for (unsigned j = 0; j < get_Size(); ++j)
 		{

@@ -12,11 +12,11 @@ public:
 	~HexGrid();
 
 	//Operators
-	const HexNode& operator()(int nRow, int nCol) const;
-	HexNode& operator()(int nRow, int nCol);
+	const HexNode& operator()(unsigned nRow, unsigned nCol) const;
+	HexNode& operator()(unsigned nRow, unsigned nCol);
 
 	//Properties
-	inline int get_Size() const;
+	inline unsigned int get_Size() const;
 private:
 	//Private Members
 	unsigned int m_Size = 0;
@@ -25,9 +25,9 @@ private:
 };
 
 //Const versie van de () operator voor const Hexgrids
-inline auto HexGrid::operator()(int nRow, int nCol) const -> const HexNode&
+inline auto HexGrid::operator()(unsigned nRow, unsigned nCol) const -> const HexNode&
 {
-	if (nRow >= 0 && nRow <= get_Size() && nCol >= 0 && nCol < get_Size())
+	if (nRow >= 0 && nRow < get_Size() && nCol >= 0 && nCol < get_Size())
 	{
 		return m_Grid[nRow][nCol];
 	}
@@ -36,9 +36,9 @@ inline auto HexGrid::operator()(int nRow, int nCol) const -> const HexNode&
 }
 
 //Normale variant
-inline auto HexGrid::operator()(int nRow, int nCol) -> HexNode&
+inline auto HexGrid::operator()(unsigned nRow, unsigned nCol) -> HexNode&
 {
-	if (nRow >= 0 && nRow <= get_Size() && nCol >= 0 && nCol < get_Size())
+	if (nRow >= 0 && nRow < get_Size() && nCol >= 0 && nCol < get_Size())
 	{
 		return m_Grid[nRow][nCol];
 	}
@@ -47,7 +47,7 @@ inline auto HexGrid::operator()(int nRow, int nCol) -> HexNode&
 }
 
 //get_Size property
-inline auto HexGrid::get_Size() const -> int
+inline auto HexGrid::get_Size() const -> unsigned int
 {
 	return m_Size;
 }
