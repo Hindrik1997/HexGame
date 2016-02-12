@@ -1,4 +1,7 @@
 #include "WindowFunctions.h"
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
+
+HWND CommandField, AcceptButton, ViewList, CommandTextLabel;
 
 auto CheckMessage() -> bool
 {
@@ -13,10 +16,23 @@ auto CheckMessage() -> bool
 	return true;
 }
 
+static HBRUSH hBrush=CreateSolidBrush(RGB(255, 255, 255)); //black
+
 auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT
 {
 	switch (msg)
 	{
+		case WM_CREATE:
+
+			CommandTextLabel = CreateWindowEx(NULL, L"STATIC",L"Commando: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20,hwnd,NULL,NULL,NULL);
+			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL,NULL, NULL);
+			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accepteer", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON , 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
+			ViewList = CreateWindowEx(NULL, L"STATIC", L"Some cool text bae", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_VSCROLL, 600, 20, 160, 529, hwnd, NULL, NULL, NULL);
+			break;
+		case WM_CTLCOLORSTATIC:
+			SetBkColor(GetWindowDC(CommandTextLabel),TRANSPARENT);
+			return (INT_PTR)hBrush;
+			break;
 		case WM_KEYDOWN:
 			if (wParam == VK_ESCAPE)
 			{
@@ -32,6 +48,15 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			break;
 		case WM_DESTROY:
 			PostQuitMessage(0);
+			break;
+		case WM_COMMAND:
+			switch (LOWORD(wParam))
+			{
+			case 1:
+				MessageBox(NULL, L"Yo Swa", L"Good morning!", MB_OK);
+				break;
+			}
+
 		break;
 			default:
 		return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -61,13 +86,17 @@ auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 			MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
-	
+	RECT r = {0,0,Width,Height};
+	AdjustWindowRect(&r, WS_SYSMENU, FALSE);
+
+
+
 	HWND hwnd = CreateWindowEx(
 		NULL,
 		WindowClassName.c_str(),
 		WindowTitle.c_str(),
 		WS_SYSMENU, //Enkel sluit button, verder default
-		CW_USEDEFAULT, CW_USEDEFAULT, Width, Height,
+		CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top,
 		NULL, NULL, hInstance, NULL);
 
 	if (hwnd == NULL)

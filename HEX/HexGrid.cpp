@@ -1,6 +1,6 @@
 #include "HexGrid.h"
 
-
+//Creërt een grid. Called HexGrid::CreateGrid()
 HexGrid::HexGrid(unsigned int size) : m_Size(size)
 {
 	if (m_Size <= 0)
@@ -16,6 +16,8 @@ HexGrid::~HexGrid()
 {
 }
 
+
+//Creëert de werkelijke grid. Wordt standaard door de constructor gecalled.
 auto HexGrid::CreateGrid() -> void
 {
 	if (m_Size <= 0)

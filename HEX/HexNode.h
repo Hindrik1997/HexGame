@@ -12,7 +12,7 @@ class HexNode
 public:
 	HexNode(int x, int y, const HexGrid& hRef);
 	~HexNode();
-	virtual void CalculateConnections();
+	void CalculateConnections();
 private:
 	vector<HexNode*> m_Neighbours;
 	int m_X;
