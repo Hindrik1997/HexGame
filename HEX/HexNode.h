@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include "State.h"
+#include "StateAndAstar.h"
 
 //Forward declaration vanwege circuliere dependency
 class HexGrid;

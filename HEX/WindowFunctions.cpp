@@ -1,6 +1,7 @@
 #include "WindowFunctions.h"
 #include <memory>
 #include <wchar.h>
+#include <chrono>
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
 
 /*
@@ -88,7 +89,12 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					*/
 
 					HDC hdc = GetDC(hwnd);
-					vector<HexNode*> a = g_hexGrid->FindPath(0, 0, 2, 2);
+
+					auto t1 = std::chrono::high_resolution_clock::now();
+					vector<HexNode*> a = g_hexGrid->FindPath(0, 0, 10, 10);
+					auto t2 = std::chrono::high_resolution_clock::now();
+					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
 					if (a.size() == 0)
 					{
 						MessageBox(NULL, L"EMPTY", L"EMPTY", MB_OK);
@@ -225,7 +231,7 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 
 }
 
-void DrawHexes(HDC& hdc, HexGrid& hexGrid)
+auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 {
 	int Index = 0;
 	int s = HexGrootte / 2;
@@ -285,7 +291,7 @@ void DrawHexes(HDC& hdc, HexGrid& hexGrid)
 	DeleteObject(NoneBrush);
 }
 
-void FillHexColor(HDC & hdc, HexGrid & hexGrid, int x, int y,COLORREF color)
+auto FillHexColor(HDC & hdc, HexGrid & hexGrid, int x, int y,COLORREF color) -> void
 {
 	int s = HexGrootte / 2;
 	int a = static_cast<int>(sqrt((pow(s, 2)) - pow((s / 2), 2)));
@@ -310,7 +316,7 @@ void FillHexColor(HDC & hdc, HexGrid & hexGrid, int x, int y,COLORREF color)
 	DeleteObject(newBrush);
 }
 
-HexNode* GetHexNodeByCoords(int x, int y, HexGrid & hexGrid) //Check voor nullptr!
+auto GetHexNodeByCoords(int x, int y, HexGrid & hexGrid) -> HexNode* //Check voor nullptr!
 {
 	int GridSize = static_cast<int>(hexGrid.get_Size());
 	int XCoord = -1;
