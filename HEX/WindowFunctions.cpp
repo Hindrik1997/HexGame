@@ -1,5 +1,6 @@
 #include "WindowFunctions.h"
 #include <memory>
+#include <wchar.h>
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
 
 /*
@@ -14,8 +15,8 @@ Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel
 
 HWND CommandField, AcceptButton, ViewList, CommandTextLabel;
 HexGrid* g_hexGrid;
-int LeftOffset = 50;
-int TopOffset = 50;
+int LeftOffset = 60;
+int TopOffset = 80;
 int HexGrootte = 30;
 
 auto CheckMessage() -> bool
@@ -42,7 +43,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Commando: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
 			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accepteer", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
-			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome to H3X: The Game! \n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
+			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welkom bij H3X: The Game! \n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
 		case WM_CTLCOLORSTATIC:
@@ -101,12 +102,33 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				if (cNode != nullptr) 
 				{
 					//Node has been hit as a bitch!
+					cNode->m_SetState(State::RED);
 					HDC hdc = GetDC(hwnd);
 					FillHexRed(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
+
 				}
 			}
 		}
 		break;
+		case WM_RBUTTONDOWN:
+			POINT Pos;
+			GetCursorPos(&Pos);
+			if (ScreenToClient(hwnd, &Pos) != 0)
+			{
+				//Er is geklikt, mogelijk op een hexagon
+				Pos.y = abs(Pos.y);
+				Pos.x = abs(Pos.x);
+
+				HexNode* cNode = GetHexNodeByCoords(Pos.x, Pos.y, *g_hexGrid);
+				if (cNode != nullptr)
+				{
+					//Node has been hit as a bitch!
+					cNode->m_SetState(State::BLUE);
+					HDC hdc = GetDC(hwnd);
+					FillHexBlue(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
+
+				}
+			}
 		case EN_VSCROLL:
 		{
 			
@@ -195,17 +217,43 @@ void DrawHexes(HDC& hdc, HexGrid& hexGrid)
 	int a = static_cast<int>(sqrt( (pow(s,2)) - pow((s/2),2)));
 	//Representeert de directe 90 graden lijn van punt 6 naar de helft van de verticale as door het centrum.
 
-	HBRUSH newBrush = CreateSolidBrush(RGB(240,240,240));
-	SelectObject(hdc,newBrush);
+	const wchar_t letters[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	HBRUSH NoneBrush = CreateSolidBrush(RGB(240, 240, 240));
+	SelectObject(hdc,NoneBrush);
 
 	for (unsigned int x = 0; x < hexGrid.get_Size(); ++x) 
 	{
 		for (unsigned int y = 0; y < hexGrid.get_Size(); ++y)
-		{
-			std::unique_ptr<POINT> pArray(new POINT[6]);
-
+		{	
 			int hexMiddleX = x*HexGrootte + LeftOffset + y*(HexGrootte / 2);
 			int hexMiddleY = y*HexGrootte + TopOffset;
+
+			wchar_t Xletter[1] = {letters[x]};
+			wstring Yletters = std::to_wstring(y);
+
+			//TopText
+			if (y == 0)
+			{
+				TextOut(hdc, hexMiddleX - HexGrootte/4, hexMiddleY - HexGrootte - HexGrootte/8,Xletter, 1);
+			}
+			//BottomText
+			if (y == hexGrid.get_Size()-1)
+			{
+				TextOut(hdc, hexMiddleX - HexGrootte / 8, hexMiddleY + HexGrootte / 2 + HexGrootte/8, Xletter, 1);
+			}
+			//RightText
+			if (x == hexGrid.get_Size() - 1)
+			{
+				TextOut(hdc, hexMiddleX + HexGrootte - HexGrootte/4, hexMiddleY - HexGrootte/4, Yletters.c_str(), static_cast<int>(Yletters.length()));
+			}
+			//LeftText
+			if (x == 0)
+			{
+				TextOut(hdc, hexMiddleX - HexGrootte - HexGrootte/8, hexMiddleY - HexGrootte / 4, Yletters.c_str(), static_cast<int>(Yletters.length()));
+			}
+	
+			std::unique_ptr<POINT> pArray(new POINT[6]);
 
 			(&*pArray)[0] = { hexMiddleX, hexMiddleY - s };
 			(&*pArray)[1] = { hexMiddleX + a, hexMiddleY - s/2 };
@@ -219,8 +267,7 @@ void DrawHexes(HDC& hdc, HexGrid& hexGrid)
 			Index += 6;
 		}
 	}
-
-	DeleteObject(newBrush);
+	DeleteObject(NoneBrush);
 }
 
 void FillHexColor(HDC & hdc, HexGrid & hexGrid, int x, int y,COLORREF color)

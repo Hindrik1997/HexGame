@@ -4,7 +4,7 @@
 //Creërt een grid. Called HexGrid::CreateGrid()
 HexGrid::HexGrid(unsigned int size) : m_Size(size)
 {
-	if (m_Size <= 0)
+	if (m_Size <= 0 || m_Size > 25)
 	{
 		MessageBox(NULL, L"Ongeldige grootte gespecifiseerd!", L"Fout!", MB_ICONEXCLAMATION | MB_OK);
 		throw std::invalid_argument("Ongeldige grid grootte"); //Lekker een exception gooien :)

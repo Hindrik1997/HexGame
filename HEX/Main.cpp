@@ -3,7 +3,7 @@
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
-	wstring ClassName = { L"HXC" };
+	wstring ClassName = { L"H3X" };
 	wstring WindowTitle = {L"H3X: The Game"};
 	int Width = 1000;
 	int Height = 600;
@@ -22,10 +22,10 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	HexGrid h(11);
 	g_hexGrid = &h;
 	DrawHexes(hdc,*g_hexGrid);
-	//FillHexRed(hdc,*g_hexGrid,2,2);
+
+	//Main loop
 	do
 	{
-		
 	} 
 	while (CheckMessage() != false);
 
