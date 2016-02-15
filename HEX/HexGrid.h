@@ -1,8 +1,6 @@
 #pragma once
 #include <vector>
 #include "HexNode.h"
-#include "WindowFunctions.h"
-
 using std::vector;
 
 class HexGrid

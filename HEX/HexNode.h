@@ -13,6 +13,8 @@ public:
 	HexNode(int x, int y, const HexGrid& hRef);
 	~HexNode();
 	void CalculateConnections();
+	inline int m_GetX();
+	inline int m_GetY();
 private:
 	vector<HexNode*> m_Neighbours;
 	int m_X;
@@ -20,3 +22,5 @@ private:
 	const HexGrid* m_ParentGrid;
 };
 
+inline int HexNode::m_GetX() { return m_X; }
+inline int HexNode::m_GetY() { return m_Y; }

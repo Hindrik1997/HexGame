@@ -1,4 +1,5 @@
 #include "HexGrid.h"
+#include "WindowFunctions.h"
 
 //Creërt een grid. Called HexGrid::CreateGrid()
 HexGrid::HexGrid(unsigned int size) : m_Size(size)
