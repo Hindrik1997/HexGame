@@ -75,6 +75,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			{
 			case 1:
 				{
+					/*
 					//Commando's processen
 					int length = GetWindowTextLength(ViewList) + 1;
 					std::unique_ptr<WCHAR> TextBuffer(new WCHAR[length]);
@@ -84,6 +85,20 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					std::unique_ptr<WCHAR> TextBuffer2(new WCHAR[length2]);
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
 					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
+					*/
+
+					HDC hdc = GetDC(hwnd);
+					vector<HexNode*> a = g_hexGrid->FindPath(0, 0, 2, 2);
+					if (a.size() == 0)
+					{
+						MessageBox(NULL, L"EMPTY", L"EMPTY", MB_OK);
+						break;
+					}
+					for (auto it = a.begin(); it != a.end(); it++)
+					{
+						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
+					}
+
 				}
 				break;
 			}

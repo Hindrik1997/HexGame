@@ -1,7 +1,12 @@
 #pragma once
 #include <vector>
 #include "HexNode.h"
+#include <algorithm>
+#include <cstdlib>
+
 using std::vector;
+using std::max;
+using std::abs;
 
 class HexGrid
 {
@@ -20,6 +25,10 @@ private:
 	unsigned int m_Size = 0;
 	vector< vector< HexNode > > m_Grid;
 	void CreateGrid();
+public:
+	vector<HexNode*> FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY); //Returns empty vector if no path is found!
+	inline int GetDistance(int xStart, int yStart, int xEnd, int yEnd);
+	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End);
 };
 
 //Const versie van de () operator voor const Hexgrids
@@ -50,3 +59,8 @@ inline auto HexGrid::get_Size() const -> unsigned int
 	return m_Size;
 }
 
+
+inline int HexGrid::GetDistance(int xStart, int yStart, int xEnd, int yEnd)
+{
+	return max(abs((xEnd - yEnd)*-1 - (xStart - yStart)*-1),max( abs(yEnd - yStart), abs(xEnd - xStart)));
+}
