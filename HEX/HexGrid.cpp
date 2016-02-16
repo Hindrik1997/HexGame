@@ -121,7 +121,11 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 				}
 				else
 				{
-					
+					int index = std::find(OpenSet.begin(), OpenSet.end(), NghBor) - OpenSet.begin();
+					if (index < OpenSet.size())
+					{
+						OpenSet.SortNodeUp(index);
+					}
 				}
 			}
 		}

@@ -22,7 +22,7 @@ public:
 	inline int size();
 	inline deque<HexNode*>::iterator begin();
 	inline deque<HexNode*>::iterator end();
-	inline void SortNodesUp();
+	inline void SortNodeUp(int index);
 };
 
 inline auto MinHeap::GetMinFCostNode() -> HexNode*
@@ -43,4 +43,4 @@ inline void MinHeap::DeleteMinFCostNode()
 inline int MinHeap::size() { return static_cast<int>(m_deque.size()); }
 inline auto MinHeap::begin() -> deque<HexNode*>::iterator { return m_deque.begin(); }
 inline auto MinHeap::end() -> deque<HexNode*>::iterator { return m_deque.end(); }
-inline auto MinHeap::SortNodesUp() -> void { MakeHeapy(); }
+inline auto MinHeap::SortNodeUp(int index) -> void { SortUp(index); }
