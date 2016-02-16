@@ -2,7 +2,7 @@
 #include "HexGrid.h"
 #include "WindowFunctions.h"
 
-HexNode::HexNode(int x, int y, const HexGrid& hRef) : m_X(x), m_Y(y), m_ParentGrid(&hRef)
+HexNode::HexNode(int x, int y, const HexGrid& hRef,int ID) : m_X(x), m_Y(y), m_ParentGrid(&hRef), m_ArrayID(ID)
 {
 }
 

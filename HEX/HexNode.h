@@ -11,28 +11,28 @@ using std::vector;
 class HexNode
 {
 public:
-	HexNode(int x, int y, const HexGrid& hRef);
+	HexNode(int x, int y, const HexGrid& hRef,int ID);
 	~HexNode();
 	void CalculateConnections();
-	inline int m_GetX();
-	inline int m_GetY();
-	inline State m_GetState();
+	inline int m_GetX() const;
+	inline int m_GetY() const;
+	inline State m_GetState() const;
 	inline void m_SetState(State);
+	inline const int m_GetID() const;
+	inline const HexGrid* m_GetHexGrid() const;
 private:
 	int m_X;
 	int m_Y;
 	const HexGrid* m_ParentGrid;
 	State m_CurrentState = State::NONE;
+	const int m_ArrayID;
 public:
-	int m_gCost = 0;
-	int m_hCost = 0;
 	vector<HexNode*> m_Neighbours;
-	HexNode* m_Parent;
-	inline int m_fCost();
 };
 
-inline int HexNode::m_GetX() { return m_X; }
-inline int HexNode::m_GetY() { return m_Y; }
-inline State HexNode::m_GetState() { return m_CurrentState; }
+inline int HexNode::m_GetX() const { return m_X; }
+inline int HexNode::m_GetY() const { return m_Y; }
+inline State HexNode::m_GetState() const { return m_CurrentState; }
 inline void HexNode::m_SetState(State state) { m_CurrentState = state; }
-inline int HexNode::m_fCost() { return m_gCost + m_hCost; }
+inline const int HexNode::m_GetID() const { return m_ArrayID; };
+inline const HexGrid* HexNode::m_GetHexGrid() const { return m_ParentGrid; }

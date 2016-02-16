@@ -1,4 +1,7 @@
 #pragma once
+#include <memory>
+
+using std::unique_ptr;
 
 enum class State : char {
 	NONE,

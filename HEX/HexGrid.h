@@ -3,10 +3,10 @@
 #include "HexNode.h"
 #include <algorithm>
 #include <cstdlib>
-#include <unordered_map>
+#include <memory>
 
 using std::vector;
-using std::unordered_map;
+using std::unique_ptr;
 using std::max;
 using std::abs;
 
@@ -30,7 +30,7 @@ private:
 public:
 	vector<HexNode*> FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY); //Returns empty vector if no path is found!
 	inline int GetDistance(int xStart, int yStart, int xEnd, int yEnd);
-	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unordered_map<HexNode*, NodeAstarData>& nData);
+	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
 };
 
 //Const versie van de () operator voor const Hexgrids
