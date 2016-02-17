@@ -6,7 +6,7 @@
 
 using std::unique_ptr;
 using std::unordered_set;
-
+/*
 struct Comparator
 {
 	Comparator(unique_ptr<NodeAstarData>& mappedData) : m_MappedData(mappedData) {}
@@ -19,24 +19,39 @@ struct Comparator
 			return true;
 		return false;
 	}
-};
+};*/
+
+void CalculateCoordsAndNeighbours(HexNode* ThisNode, HexNode* StartNode, vector<HexNode*>& EvaluatedSet)
+{
+	EvaluatedSet.push_back(ThisNode);
+	//x + y + z = 0
+	ThisNode->m_SetCubicalX(ThisNode->m_GetX() - StartNode->m_GetX());
+	ThisNode->m_SetCubicalY(ThisNode->m_GetY() - StartNode->m_GetY());
+	ThisNode->m_SetCubicalZ((-1*ThisNode->m_GetCubicalX()) - (ThisNode->m_GetCubicalY()));
+
+	for (int i = 0; i < ThisNode->m_Neighbours.size(); ++i)
+	{
+		if(std::find(EvaluatedSet.begin(),EvaluatedSet.end(),ThisNode->m_Neighbours[i]) == EvaluatedSet.end())
+			CalculateCoordsAndNeighbours(ThisNode->m_Neighbours[i], StartNode,EvaluatedSet);
+	}
+}
 
 //Creërt een grid. Called HexGrid::CreateGrid()
 HexGrid::HexGrid(unsigned int size) : m_Size(size)
 {
-	if (m_Size <= 0 || m_Size > 25)
+	if (m_Size <= 0 || m_Size > 25 || m_Size % 2 == 0)
 	{
 		MessageBox(NULL, L"Ongeldige grootte gespecifiseerd!", L"Fout!", MB_ICONEXCLAMATION | MB_OK);
 		throw std::invalid_argument("Ongeldige grid grootte"); //Lekker een exception gooien :)
 	}
 	CreateGrid();
+	CalculateCubicalCoordinates();
 }
 
 
 HexGrid::~HexGrid()
 {
 }
-
 
 //Creëert de werkelijke grid. Wordt standaard door de constructor gecalled.
 auto HexGrid::CreateGrid() -> void
@@ -65,7 +80,17 @@ auto HexGrid::CreateGrid() -> void
 			m_Grid[i][j].CalculateConnections();
 		}
 	}
+}
 
+void HexGrid::CalculateCubicalCoordinates()
+{
+	vector<HexNode*> EvaluatedSet;
+	int MiddleX = m_Size / 2;
+	int MiddleY = m_Size / 2;
+
+	HexNode* MiddleNode = &(*this)(MiddleX, MiddleY);
+	MiddleNode->m_SetCubicalCoords(0, 0, 0);
+	CalculateCoordsAndNeighbours(MiddleNode, MiddleNode, EvaluatedSet);
 }
 
 

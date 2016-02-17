@@ -89,6 +89,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
 					*/
 
+
 					HDC hdc = GetDC(hwnd);
 					UpdateHexes(hdc,*g_hexGrid);
 					auto t1 = std::chrono::high_resolution_clock::now();
@@ -127,7 +128,10 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					cNode->m_SetState(State::RED);
 					HDC hdc = GetDC(hwnd);
 					FillHexRed(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
-
+					for (int i = 0; i < cNode->m_Neighbours.size(); ++i)
+					{
+						FillHexColor(hdc, *g_hexGrid, cNode->m_Neighbours[i]->m_GetX(), cNode->m_Neighbours[i]->m_GetY(), RGB(0, 255, 0));
+					}
 				}
 			}
 		}
@@ -255,6 +259,17 @@ auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 				break;
 			default: break;
 			}
+			int hexMiddleX = x*HexGrootte + LeftOffset + y*(HexGrootte / 2);
+			int hexMiddleY = y*HexGrootte + TopOffset;
+
+
+
+			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
+			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
+			wstring zc = std::to_wstring(hexGrid(x,y).m_GetCubicalZ());
+			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte/4, xc.c_str(), xc.length());
+			TextOut(hdc, hexMiddleX + HexGrootte / 4 , hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
+			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
 		}
 	}
 }
@@ -314,6 +329,14 @@ auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 			Polygon(hdc, &*pArray, 6);
 
 			Index += 6;
+
+			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
+			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
+			wstring zc = std::to_wstring(hexGrid(x, y).m_GetCubicalZ());
+			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte / 4, xc.c_str(), xc.length());
+			TextOut(hdc, hexMiddleX + HexGrootte / 4, hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
+			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
+
 		}
 	}
 	DeleteObject(NoneBrush);
