@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <windowsx.h>
@@ -14,6 +15,7 @@ bool CheckMessage();
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 HWND InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring WindowTitle, int Width, int Height);
 void ProcessCommands(wstring Command,wstring Contents);
+void UpdateHexes(HDC& hdc, HexGrid& hexGrid);
 void DrawHexes(HDC& hdc, HexGrid& hexGrid);
 void FillHexColor(HDC& hdc, HexGrid& hexGrid, int x, int y, COLORREF color);
 HexNode* GetHexNodeByCoords(int x, int y, HexGrid& hexGrid);

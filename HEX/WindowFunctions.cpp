@@ -15,6 +15,7 @@ Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel
 
 
 HWND CommandField, AcceptButton, ViewList, CommandTextLabel;
+vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
 int LeftOffset = 60;
 int TopOffset = 80;
@@ -89,18 +90,18 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					*/
 
 					HDC hdc = GetDC(hwnd);
-
+					UpdateHexes(hdc,*g_hexGrid);
 					auto t1 = std::chrono::high_resolution_clock::now();
-					vector<HexNode*> a = g_hexGrid->FindPath(0, 0, 10, 10);
+					oldPath = g_hexGrid->FindPath(0, 0, 10, 10);
 					auto t2 = std::chrono::high_resolution_clock::now();
 					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
-					if (a.size() == 0)
+					if (oldPath.size() == 0)
 					{
 						MessageBox(NULL, L"EMPTY", L"EMPTY", MB_OK);
 						break;
 					}
-					for (auto it = a.begin(); it != a.end(); it++)
+					for (auto it = oldPath.begin(); it != oldPath.end(); it++)
 					{
 						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
 					}
@@ -229,6 +230,33 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 	}
 
 
+}
+
+auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
+{
+	HBRUSH NoneBrush = CreateSolidBrush(RGB(240, 240, 240));
+	HBRUSH RedBrush = CreateSolidBrush(RGB(255,0,0));
+	HBRUSH BlueBrush = CreateSolidBrush(RGB(0,0,255));
+
+	for (unsigned int x = 0; x < hexGrid.get_Size(); ++x)
+	{
+		for (unsigned int y = 0; y < hexGrid.get_Size(); ++y)
+		{		
+			switch (hexGrid(x,y).m_GetState())
+			{
+			case State::BLUE:
+				FillHexBlue(hdc, hexGrid, x, y);
+				break;
+			case State::RED:
+				FillHexRed(hdc, hexGrid, x, y);
+				break;
+			case State::NONE:
+				FillHexGrey(hdc, hexGrid, x, y);
+				break;
+			default: break;
+			}
+		}
+	}
 }
 
 auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void

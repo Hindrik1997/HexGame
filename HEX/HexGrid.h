@@ -7,6 +7,7 @@
 
 using std::vector;
 using std::unique_ptr;
+using std::min;
 using std::max;
 using std::abs;
 
@@ -64,5 +65,9 @@ inline auto HexGrid::get_Size() const -> unsigned int
 
 inline int HexGrid::GetDistance(int xStart, int yStart, int xEnd, int yEnd)
 {
-	return max(abs((xEnd - yEnd)*-1 - (xStart - yStart)*-1),max( abs(yEnd - yStart), abs(xEnd - xStart)));
+	//int DelY = abs((yStart * 14) - (yEnd * 14));
+	//int DelX = abs((xStart * 10) - (xEnd * 10));
+	//return DelX * DelX + DelY * DelY;
+	return max(abs((xEnd - yEnd)*-1 - (xStart - yStart)*-1), max(abs(yEnd - yStart), abs(xEnd - xStart)));
+
 }

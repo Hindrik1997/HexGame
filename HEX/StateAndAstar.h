@@ -16,5 +16,7 @@ struct NodeAstarData {
 	int m_gCost;
 	HexNode* m_Parent;
 	inline int m_fCost() { return m_hCost + m_gCost; }
+	bool m_isClosed = false;
+	bool m_isInOpenSet = false;
 	NodeAstarData(int hCost = 0, int gCost = 0, HexNode* parent = nullptr) : m_hCost(hCost), m_gCost(gCost), m_Parent(parent) {}
 };

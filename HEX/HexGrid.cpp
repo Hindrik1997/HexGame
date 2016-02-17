@@ -2,10 +2,8 @@
 #include "WindowFunctions.h"
 #include "StateAndAstar.h"
 #include "MinHeap.h"
-#include <deque>
 #include <unordered_set>
 
-using std::deque;
 using std::unique_ptr;
 using std::unordered_set;
 
@@ -70,6 +68,96 @@ auto HexGrid::CreateGrid() -> void
 
 }
 
+
+auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
+{
+	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
+	HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
+
+	vector<HexNode*> OpenSet;
+	unordered_set<HexNode*> ClosedSet; //unordered_set blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[(StartNode)->m_GetHexGrid()->get_Size() * (StartNode)->m_GetHexGrid()->get_Size()]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+
+	OpenSet.push_back(StartNode);
+	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
+	NodeAstarData start;
+	(&*mappedData)[StartNode->m_GetID()] = start;
+	(&*mappedData)[EndNode->m_GetID()] = start;
+
+	while (OpenSet.size() > 0)
+	{
+		HexNode* CurrentLocation = OpenSet.front();
+		int IndexStorer = 0;
+		for (int i = 0; i < OpenSet.size(); ++i)
+		{
+			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost() || (&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() == (&*mappedData)[CurrentLocation->m_GetID()].m_fCost() && (&*mappedData)[OpenSet[i]->m_GetID()].m_hCost < (&*mappedData)[CurrentLocation->m_GetID()].m_hCost)
+			{
+				CurrentLocation = OpenSet[i];
+				IndexStorer = i;
+			}
+		}
+		OpenSet.erase(OpenSet.begin() + IndexStorer);
+		ClosedSet.insert(CurrentLocation);
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isClosed = true;
+
+		if (CurrentLocation == EndNode)
+		{
+			//Traceer path
+			return RetracePath(StartNode, EndNode, mappedData);
+		}
+
+		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
+		{
+			HexNode* NghBor = *it;
+			if (NghBor->m_GetState() != StartNode->m_GetState() && NghBor->m_GetState() != State::NONE || (&*mappedData)[NghBor->m_GetID()].m_isClosed)
+			{
+				continue;
+			}
+
+			int newMoveCostToNgh = (&*mappedData)[NghBor->m_GetID()].m_gCost + GetDistance(CurrentLocation->m_GetX(), CurrentLocation->m_GetY(), NghBor->m_GetX(), NghBor->m_GetY());
+			bool isInOpenSet = (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet;
+			
+			if (!(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet)
+			{
+				NodeAstarData nData;
+				nData.m_gCost = newMoveCostToNgh;
+				nData.m_hCost = GetDistance(NghBor->m_GetX(), NghBor->m_GetY(), EndNodeX, EndNodeY);
+				nData.m_Parent = CurrentLocation;
+				OpenSet.push_back(NghBor);
+				(&*mappedData)[NghBor->m_GetID()] = nData;
+				(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet = true;
+
+			}
+			else if (newMoveCostToNgh >= (&*mappedData)[NghBor->m_GetID()].m_gCost)
+				continue;
+			else
+			{
+				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
+				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMoveCostToNgh;
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor->m_GetX(),NghBor->m_GetY(),EndNodeX,EndNodeY);
+			}
+			
+		}
+	}
+	return vector<HexNode*>();
+}
+
+auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarData>& nData) -> vector<HexNode*>
+{
+	vector<HexNode*> path;
+	HexNode* CurrentObserved = End;
+	while (CurrentObserved != Start)
+	{
+		path.push_back(CurrentObserved);
+		CurrentObserved = (&*nData)[CurrentObserved->m_GetID()].m_Parent;
+	}
+	path.push_back(Start);
+	std::reverse(path.begin(), path.end());
+	return path;
+}
+
+/* Broken Heap
 auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
 {
 	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
@@ -147,7 +235,7 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 	return path;
 }
 
-/*// Superfast implementation
+/* //Broken Superfast implementation
 auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
 {
 	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
@@ -156,7 +244,10 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 	deque<HexNode*> OpenSet; //Moet nog een heap worden
 	unordered_set<HexNode*> ClosedSet; //unordered_set blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
 	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[(StartNode)->m_GetHexGrid()->get_Size() * (StartNode)->m_GetHexGrid()->get_Size()]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+	
 	OpenSet.push_back(StartNode);
+	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
 	NodeAstarData start;
 	(&*mappedData)[StartNode->m_GetID()] = start;
 	(&*mappedData)[EndNode->m_GetID()] = start;
@@ -175,6 +266,7 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 		}
 		OpenSet.erase(OpenSet.begin() + IndexStorer);
 		ClosedSet.insert(CurrentLocation);
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isClosed = true;
 
 		if (CurrentLocation == EndNode)
 		{
@@ -184,22 +276,24 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
 		{
 			HexNode* NghBor = *it;
-			if (NghBor->m_GetState() != StartNode->m_GetState() && NghBor->m_GetState() != State::NONE || std::find(ClosedSet.begin(), ClosedSet.end(), NghBor) != ClosedSet.end())
+			if (NghBor->m_GetState() != StartNode->m_GetState() && NghBor->m_GetState() != State::NONE || (&*mappedData)[NghBor->m_GetID()].m_isClosed)
 			{
 				continue;
 			}
 			int newMoveCostToNgh = (&*mappedData)[NghBor->m_GetID()].m_gCost + GetDistance(CurrentLocation->m_GetX(), CurrentLocation->m_GetY(), NghBor->m_GetX(), NghBor->m_GetY());
-			if (newMoveCostToNgh < (&*mappedData)[NghBor->m_GetID()].m_gCost || std::find(OpenSet.begin(), OpenSet.end(), NghBor) == OpenSet.end())
+			bool isInOpenSet = (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet;
+			if (newMoveCostToNgh < (&*mappedData)[NghBor->m_GetID()].m_gCost || !isInOpenSet)
 			{
 				NodeAstarData nData;
 				nData.m_gCost = newMoveCostToNgh;
 				nData.m_hCost = GetDistance(NghBor->m_GetX(), NghBor->m_GetY(), EndNode->m_GetX(), EndNode->m_GetY());
 				nData.m_Parent = CurrentLocation;
 
-				if (std::find(OpenSet.begin(), OpenSet.end(), NghBor) == OpenSet.end())
+				if (!isInOpenSet)
 				{
 					OpenSet.push_back(NghBor);
 					(&*mappedData)[NghBor->m_GetID()] = nData;
+					(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet = true;
 				}
 			}
 		}
@@ -219,8 +313,8 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 	path.push_back(Start);
 	std::reverse(path.begin(), path.end());
 	return path;
-}
-*/
+}*/
+
 /* Oude map implementatie, ongeveer 2x zo sloom als dan met de array
 auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
 {
