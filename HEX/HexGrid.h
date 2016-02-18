@@ -31,7 +31,7 @@ private:
 	void CalculateCubicalCoordinates();
 public:
 	vector<HexNode*> FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY); //Returns empty vector if no path is found!
-	inline int GetDistance(int xStart, int yStart, int xEnd, int yEnd);
+	inline int GetDistance(int xStart, int yStart, int zStart, int xEnd, int yEnd, int zEnd);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
 };
 
@@ -64,12 +64,11 @@ inline auto HexGrid::get_Size() const -> unsigned int
 }
 
 
-inline int HexGrid::GetDistance(int xStart, int yStart, int xEnd, int yEnd)
+inline int HexGrid::GetDistance(int xStart, int yStart,int zStart, int xEnd, int yEnd, int zEnd)
 {
 	//Convert to cubical coords
+	
+	return (abs(xStart - xEnd) + abs(yStart - yEnd) + abs(zStart - zEnd)) / 2;
 
-	int zStart = - xStart - yStart;
-	int zEnd = -xEnd - yEnd;
 
-	return max(max(abs(xStart - xEnd),abs(yStart - yEnd)),abs(zStart - zEnd));
 }

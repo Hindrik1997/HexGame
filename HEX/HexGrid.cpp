@@ -96,8 +96,18 @@ void HexGrid::CalculateCubicalCoordinates()
 
 auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
 {
+	
 	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
 	HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
+
+	StartNodeX = StartNode->m_GetCubicalX();
+	StartNodeY = StartNode->m_GetCubicalY();
+	int StartNodeZ = StartNode->m_GetCubicalZ();
+
+	EndNodeX = EndNode->m_GetCubicalX();
+	EndNodeY = EndNode->m_GetCubicalY();
+	int EndNodeZ = EndNode->m_GetCubicalZ();
+
 
 	vector<HexNode*> OpenSet;
 	unordered_set<HexNode*> ClosedSet; //unordered_set blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
@@ -140,14 +150,14 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 				continue;
 			}
 
-			int newMoveCostToNgh = (&*mappedData)[NghBor->m_GetID()].m_gCost + GetDistance(CurrentLocation->m_GetX(), CurrentLocation->m_GetY(), NghBor->m_GetX(), NghBor->m_GetY());
+			int newMoveCostToNgh = (&*mappedData)[NghBor->m_GetID()].m_gCost + GetDistance(CurrentLocation->m_GetCubicalX(), CurrentLocation->m_GetCubicalY(),CurrentLocation->m_GetCubicalZ(), NghBor->m_GetCubicalX(), NghBor->m_GetCubicalY(), NghBor->m_GetCubicalZ());
 			bool isInOpenSet = (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet;
 			
 			if (!(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet)
 			{
 				NodeAstarData nData;
 				nData.m_gCost = newMoveCostToNgh;
-				nData.m_hCost = GetDistance(NghBor->m_GetX(), NghBor->m_GetY(), EndNodeX, EndNodeY);
+				nData.m_hCost = GetDistance(NghBor->m_GetCubicalX(), NghBor->m_GetCubicalY(),NghBor->m_GetCubicalZ(), EndNodeX, EndNodeY,EndNodeZ);
 				nData.m_Parent = CurrentLocation;
 				OpenSet.push_back(NghBor);
 				(&*mappedData)[NghBor->m_GetID()] = nData;
@@ -160,7 +170,7 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 			{
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMoveCostToNgh;
-				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor->m_GetX(),NghBor->m_GetY(),EndNodeX,EndNodeY);
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor->m_GetCubicalX(),NghBor->m_GetCubicalY(),NghBor->m_GetCubicalZ(),EndNodeX,EndNodeY,EndNodeZ);
 			}
 			
 		}
