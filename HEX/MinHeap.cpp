@@ -1,8 +1,8 @@
 #include "MinHeap.h"
 
-void MinHeap::SortDown(int index)
+auto MinHeap::SortDown(int index) -> void
 {
-	int length = static_cast<int>(m_deque.size());
+	int length = static_cast<int>(m_vector.size());
 	int leftChildIndex = 2 * index + 1;
 	int rightChildIndex = 2 * index + 2;
 
@@ -11,12 +11,12 @@ void MinHeap::SortDown(int index)
 
 	int minIndex = index;
 
-	if (m_deque[index] == nullptr || m_deque[leftChildIndex] == nullptr || (&*m_MappedData)[m_deque[index]->m_GetID()].m_fCost() > (&*m_MappedData)[m_deque[leftChildIndex]->m_GetID()].m_fCost())
+	if (m_vector[index] == nullptr || m_vector[leftChildIndex] == nullptr || (&*m_MappedData)[m_vector[index]->m_GetID()].m_fCost() > (&*m_MappedData)[m_vector[leftChildIndex]->m_GetID()].m_fCost())
 	{
 		minIndex = leftChildIndex;
 	}
 
-	if (m_deque[minIndex] == nullptr || m_deque[rightChildIndex] == nullptr || (rightChildIndex < length) && ((&*m_MappedData)[m_deque[minIndex]->m_GetID()].m_fCost() >(&*m_MappedData)[m_deque[rightChildIndex]->m_GetID()].m_fCost()))
+	if (m_vector[minIndex] == nullptr || m_vector[rightChildIndex] == nullptr || (rightChildIndex < length) && ((&*m_MappedData)[m_vector[minIndex]->m_GetID()].m_fCost() >(&*m_MappedData)[m_vector[rightChildIndex]->m_GetID()].m_fCost()))
 	{
 		minIndex = rightChildIndex;
 	}
@@ -24,45 +24,57 @@ void MinHeap::SortDown(int index)
 	if (minIndex != index)
 	{
 		//swappen maar
-		HexNode* temp = m_deque[index];
-		m_deque[index] = m_deque[minIndex];
-		m_deque[minIndex] = temp;
+		HexNode* temp = m_vector[index];
+		m_vector[index] = m_vector[minIndex];
+		m_vector[minIndex] = temp;
 		SortDown(minIndex);
 	}
 
 }
 
-void MinHeap::SortUp(int index)
+auto MinHeap::SortUp(int index) -> void
 {
 	if (index == 0)
 		return;
 
 	int parentIndex = (index - 1) / 2;
-	if (m_deque[parentIndex] == nullptr || m_deque[index] == nullptr || (&*m_MappedData)[m_deque[parentIndex]->m_GetID()].m_fCost() > (&*m_MappedData)[m_deque[index]->m_GetID()].m_fCost())
+	if (m_vector[parentIndex] == nullptr || m_vector[index] == nullptr || (&*m_MappedData)[m_vector[parentIndex]->m_GetID()].m_fCost() > (&*m_MappedData)[m_vector[index]->m_GetID()].m_fCost())
 	{
 		//Swappen
-		HexNode* temp = m_deque[parentIndex];
-		m_deque[parentIndex] = m_deque[index];
-		m_deque[index] = temp;
+		HexNode* temp = m_vector[parentIndex];
+		m_vector[parentIndex] = m_vector[index];
+		m_vector[index] = temp;
 		SortUp(parentIndex);
 	}
 }
 
-void MinHeap::MakeHeapy()
+auto MinHeap::MakeHeapy() -> void
 {
-	for (int i = static_cast<int>(m_deque.size()) - 1; i >= 0; --i)
+	for (int i = static_cast<int>(m_vector.size()) - 1; i >= 0; --i)
 	{
 		SortDown(i);
 	}
 }
 
-MinHeap::MinHeap(deque<HexNode*>& deq, unique_ptr<NodeAstarData>& mData) : m_deque(deq), m_MappedData(mData)
+MinHeap::MinHeap(vector<HexNode*>& deq, unique_ptr<NodeAstarData>& mData) : m_vector(deq), m_MappedData(mData)
 {
 	MakeHeapy();
 }
 
-void MinHeap::Insert(HexNode* newVal)
+auto MinHeap::Insert(HexNode* newVal) -> void
 {
-	m_deque[m_deque.size()-1] = newVal;
-	SortUp(static_cast<int>(m_deque.size()-1));
+	m_vector[m_vector.size()-1] = newVal;
+	SortUp(static_cast<int>(m_vector.size()-1));
+}
+
+auto MinHeap::SortNodeUp(HexNode * Node) -> void
+{
+	for (int i = 0; i < m_vector.size(); ++i)
+	{
+		if (m_vector[i] == Node)
+		{
+			SortUp(i);
+			return;
+		}
+	}
 }

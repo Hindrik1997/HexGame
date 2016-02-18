@@ -263,13 +263,13 @@ auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 			int hexMiddleY = y*HexGrootte + TopOffset;
 
 
-
-			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
+			/*			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
 			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
 			wstring zc = std::to_wstring(hexGrid(x,y).m_GetCubicalZ());
 			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte/4, xc.c_str(), xc.length());
 			TextOut(hdc, hexMiddleX + HexGrootte / 4 , hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
 			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
+			*/
 		}
 	}
 }
@@ -330,13 +330,14 @@ auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 
 			Index += 6;
 
+			/*
 			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
 			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
 			wstring zc = std::to_wstring(hexGrid(x, y).m_GetCubicalZ());
 			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte / 4, xc.c_str(), xc.length());
 			TextOut(hdc, hexMiddleX + HexGrootte / 4, hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
 			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
-
+			*/
 		}
 	}
 	DeleteObject(NoneBrush);
