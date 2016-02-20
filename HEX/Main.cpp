@@ -14,7 +14,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 		MessageBox(NULL, L"Window handle was zero?", L"Yo Dawg, Weird Error man!", MB_ICONEXCLAMATION | MB_OK);
 		return -1;
 	}
-	
+
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
 	HDC hdc = GetDC(hwnd);
@@ -28,7 +28,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	{
 	} 
 	while (CheckMessage() != false);
-
 	ReleaseDC(hwnd,hdc);
 	return 0;
 }

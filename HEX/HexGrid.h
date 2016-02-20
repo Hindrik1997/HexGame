@@ -30,9 +30,15 @@ private:
 	void CreateGrid();
 	void CalculateCubicalCoordinates();
 public:
-	vector<HexNode*> FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY); //Returns empty vector if no path is found!
+	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
+	Move ComputeBestMove(Move m);
+	State GetVictorious();
+	HexNode* TopNode;
+	HexNode* BottomNode;
+	HexNode* LeftNode;
+	HexNode* RightNode;
 };
 
 //Const versie van de () operator voor const Hexgrids
@@ -64,7 +70,7 @@ inline auto HexGrid::get_Size() const -> unsigned int
 }
 
 
-inline int HexGrid::GetDistance(HexNode* FirstNode, HexNode* SecondNode)
+inline auto HexGrid::GetDistance(HexNode* FirstNode, HexNode* SecondNode) -> int
 {
 	return (abs(FirstNode->m_GetCubicalX() - SecondNode->m_GetCubicalX()) + abs(FirstNode->m_GetCubicalY() - SecondNode->m_GetCubicalY()) + abs(FirstNode->m_GetCubicalZ() - SecondNode->m_GetCubicalZ())) / 2;
 }

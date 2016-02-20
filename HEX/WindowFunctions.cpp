@@ -89,11 +89,10 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
 					*/
 
-
 					HDC hdc = GetDC(hwnd);
 					UpdateHexes(hdc,*g_hexGrid);
 					auto t1 = std::chrono::high_resolution_clock::now();
-					oldPath = g_hexGrid->FindPath(0, 0, 10, 10);
+					oldPath = g_hexGrid->FindPath(g_hexGrid->TopNode, g_hexGrid->BottomNode);
 					auto t2 = std::chrono::high_resolution_clock::now();
 					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
@@ -106,7 +105,6 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					{
 						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
 					}
-
 				}
 				break;
 			}
@@ -128,10 +126,11 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					cNode->m_SetState(State::RED);
 					HDC hdc = GetDC(hwnd);
 					FillHexRed(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
+					/*
 					for (int i = 0; i < cNode->m_Neighbours.size(); ++i)
 					{
 						FillHexColor(hdc, *g_hexGrid, cNode->m_Neighbours[i]->m_GetX(), cNode->m_Neighbours[i]->m_GetY(), RGB(0, 255, 0));
-					}
+					}*/
 				}
 			}
 		}
@@ -155,10 +154,6 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 
 				}
 			}
-		case EN_VSCROLL:
-		{
-			
-		}			
 			break;
 		default:
 			return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -232,8 +227,6 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 		Contents += L"\r\nOnbekend commando!";
 		SetWindowText(ViewList, Contents.c_str());
 	}
-
-
 }
 
 auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
@@ -241,7 +234,7 @@ auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 	HBRUSH NoneBrush = CreateSolidBrush(RGB(240, 240, 240));
 	HBRUSH RedBrush = CreateSolidBrush(RGB(255,0,0));
 	HBRUSH BlueBrush = CreateSolidBrush(RGB(0,0,255));
-
+	SelectObject(hdc,NoneBrush);
 	for (unsigned int x = 0; x < hexGrid.get_Size(); ++x)
 	{
 		for (unsigned int y = 0; y < hexGrid.get_Size(); ++y)
@@ -261,22 +254,15 @@ auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 			}
 			int hexMiddleX = x*HexGrootte + LeftOffset + y*(HexGrootte / 2);
 			int hexMiddleY = y*HexGrootte + TopOffset;
-
-
-			/*			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
-			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
-			wstring zc = std::to_wstring(hexGrid(x,y).m_GetCubicalZ());
-			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte/4, xc.c_str(), xc.length());
-			TextOut(hdc, hexMiddleX + HexGrootte / 4 , hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
-			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
-			*/
 		}
 	}
+	DeleteObject(NoneBrush);
+	DeleteObject(RedBrush);
+	DeleteObject(BlueBrush);
 }
 
 auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 {
-	int Index = 0;
 	int s = HexGrootte / 2;
 	int a = static_cast<int>(sqrt( (pow(s,2)) - pow((s/2),2)));
 	//Representeert de directe 90 graden lijn van punt 6 naar de helft van de verticale as door het centrum.
@@ -327,20 +313,29 @@ auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 			(&*pArray)[5] = { hexMiddleX - a, hexMiddleY - s/2 };
 			
 			Polygon(hdc, &*pArray, 6);
-
-			Index += 6;
-
-			/*
-			wstring xc = std::to_wstring(hexGrid(x, y).m_GetCubicalX());
-			wstring yc = std::to_wstring(hexGrid(x, y).m_GetCubicalY());
-			wstring zc = std::to_wstring(hexGrid(x, y).m_GetCubicalZ());
-			TextOut(hdc, hexMiddleX - HexGrootte / 3, hexMiddleY - HexGrootte / 4, xc.c_str(), xc.length());
-			TextOut(hdc, hexMiddleX + HexGrootte / 4, hexMiddleY - HexGrootte / 5, yc.c_str(), yc.length());
-			TextOut(hdc, hexMiddleX + HexGrootte / 3, hexMiddleY - HexGrootte / 4, zc.c_str(), zc.length());
-			*/
 		}
+		/*
+
+		int hexMiddleX = xGrid*HexGrootte + LeftOffset + yGrid*(HexGrootte / 2);
+		int hexMiddleY = yGrid*HexGrootte + TopOffset;
+		*/
 	}
 	DeleteObject(NoneBrush);
+	int size = hexGrid.get_Size();
+	HPEN BPen = CreatePen(PS_SOLID, 5, RGB(0,0,255));
+	SelectObject(hdc,BPen);
+	MoveToEx(hdc, LeftOffset - HexGrootte - HexGrootte/2, TopOffset, NULL);
+	LineTo(hdc, LeftOffset + (size-1) * (HexGrootte / 2) - HexGrootte - HexGrootte/2, (size-1) * HexGrootte + TopOffset);
+	MoveToEx(hdc, LeftOffset + (size-1) * HexGrootte + HexGrootte + HexGrootte / 2, TopOffset, NULL);
+	LineTo(hdc, LeftOffset + (size-1) * HexGrootte + (size - 1) * (HexGrootte / 2) + HexGrootte + HexGrootte / 2, (size - 1) * HexGrootte + TopOffset);
+	DeleteObject(BPen);
+	HPEN RPen = CreatePen(PS_SOLID, 5, RGB(255, 0, 0));
+	SelectObject(hdc,RPen);
+	MoveToEx(hdc, LeftOffset, TopOffset - HexGrootte - HexGrootte/2, NULL);
+	LineTo(hdc, LeftOffset + HexGrootte * (size-1), TopOffset - HexGrootte - HexGrootte/2);
+	MoveToEx(hdc, LeftOffset + (size-1) * (HexGrootte/2),(size-1) * HexGrootte + TopOffset + HexGrootte + HexGrootte / 2, NULL);
+	LineTo(hdc, LeftOffset + HexGrootte * (size - 1) + (size - 1) * (HexGrootte / 2), (size - 1) * HexGrootte + TopOffset + HexGrootte + HexGrootte / 2);
+	DeleteObject(RPen);
 }
 
 auto FillHexColor(HDC & hdc, HexGrid & hexGrid, int x, int y,COLORREF color) -> void

@@ -29,6 +29,7 @@ public:
 	inline void m_SetState(State);
 	inline const int m_GetID() const;
 	inline const HexGrid* m_GetHexGrid() const;
+	inline void AddConnection(HexNode* node);
 private:
 	int m_X;
 	int m_Y;
@@ -58,3 +59,5 @@ inline State HexNode::m_GetState() const { return m_CurrentState; }
 inline void HexNode::m_SetState(State state) { m_CurrentState = state; }
 inline const int HexNode::m_GetID() const { return m_ArrayID; };
 inline const HexGrid* HexNode::m_GetHexGrid() const { return m_ParentGrid; }
+
+inline void HexNode::AddConnection(HexNode* node) { m_Neighbours.push_back(node); }

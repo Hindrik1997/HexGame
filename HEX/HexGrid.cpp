@@ -1,27 +1,10 @@
 #include "HexGrid.h"
 #include "WindowFunctions.h"
 #include "StateAndAstar.h"
-#include "MinHeap.h"
-#include <unordered_set>
 
 using std::unique_ptr;
-using std::unordered_set;
-/*
-struct Comparator
-{
-	Comparator(unique_ptr<NodeAstarData>& mappedData) : m_MappedData(mappedData) {}
-	unique_ptr<NodeAstarData>& m_MappedData;
-	bool operator() (const HexNode* s1, const HexNode* s2)
-	{
-		if (s1 == nullptr || s2 == nullptr)
-			return false;
-		if ((&*m_MappedData)[s1->m_GetID()].m_fCost() < (&*m_MappedData)[s2->m_GetID()].m_fCost())
-			return true;
-		return false;
-	}
-};*/
 
-void CalculateCoordsAndNeighbours(HexNode* ThisNode, HexNode* StartNode, vector<HexNode*>& EvaluatedSet)
+auto CalculateCoordsAndNeighbours(HexNode* ThisNode, HexNode* StartNode, vector<HexNode*>& EvaluatedSet) -> void
 {
 	EvaluatedSet.push_back(ThisNode);
 	//x + y + z = 0
@@ -31,9 +14,20 @@ void CalculateCoordsAndNeighbours(HexNode* ThisNode, HexNode* StartNode, vector<
 
 	for (int i = 0; i < ThisNode->m_Neighbours.size(); ++i)
 	{
-		if(std::find(EvaluatedSet.begin(),EvaluatedSet.end(),ThisNode->m_Neighbours[i]) == EvaluatedSet.end())
-			CalculateCoordsAndNeighbours(ThisNode->m_Neighbours[i], StartNode,EvaluatedSet);
+		if (ThisNode->m_Neighbours[i] != ThisNode->m_GetHexGrid()->TopNode)
+		{
+			if (std::find(EvaluatedSet.begin(), EvaluatedSet.end(), ThisNode->m_Neighbours[i]) == EvaluatedSet.end())
+				CalculateCoordsAndNeighbours(ThisNode->m_Neighbours[i], StartNode, EvaluatedSet);
+		}
 	}
+}
+
+auto CalculateCoordsSpecialNodes(HexNode* ThisNode, HexNode* StartNode) -> void
+{
+	//x + y + z = 0
+	ThisNode->m_SetCubicalX(ThisNode->m_GetX() - StartNode->m_GetX());
+	ThisNode->m_SetCubicalY(ThisNode->m_GetY() - StartNode->m_GetY());
+	ThisNode->m_SetCubicalZ((-1 * ThisNode->m_GetCubicalX()) - (ThisNode->m_GetCubicalY()));
 }
 
 //Creërt een grid. Called HexGrid::CreateGrid()
@@ -51,6 +45,14 @@ HexGrid::HexGrid(unsigned int size) : m_Size(size)
 
 HexGrid::~HexGrid()
 {
+	if (BottomNode)
+		delete BottomNode;
+	if (TopNode)
+		delete TopNode;
+	if (LeftNode)
+		delete LeftNode;
+	if (RightNode)
+		delete RightNode;
 }
 
 //Creëert de werkelijke grid. Wordt standaard door de constructor gecalled.
@@ -80,9 +82,55 @@ auto HexGrid::CreateGrid() -> void
 			m_Grid[i][j].CalculateConnections();
 		}
 	}
+
+	int MiddleX = m_Size / 2;
+	int MiddleY = m_Size / 2;
+
+	HexNode* MiddleNode = &(*this)(MiddleX, MiddleY);
+
+
+	TopNode = new HexNode((get_Size()-1)/2, -1, *this, IDKeeper);
+	IDKeeper++;
+	for (int i = 0; i < get_Size(); ++i)
+	{
+		TopNode->AddConnection(&m_Grid[i][0]);
+		m_Grid[i][0].AddConnection(TopNode);
+	}
+	CalculateCoordsSpecialNodes(TopNode,MiddleNode);
+	
+	BottomNode = new HexNode((get_Size() - 1) / 2, get_Size(), *this, IDKeeper);
+	IDKeeper++;
+	for (int i = 0; i < get_Size(); ++i)
+	{
+		BottomNode->AddConnection(&m_Grid[i][get_Size()-1]);
+		m_Grid[i][get_Size() - 1].AddConnection(BottomNode);
+	}
+	CalculateCoordsSpecialNodes(BottomNode, MiddleNode);
+	
+	LeftNode = new HexNode(-1, (get_Size() / 2), *this, IDKeeper);
+	IDKeeper++;
+	for (int i = 0; i < get_Size(); ++i)
+	{
+		LeftNode->AddConnection(&m_Grid[0][i]);
+		m_Grid[0][i].AddConnection(LeftNode);
+	}
+	CalculateCoordsSpecialNodes(LeftNode, MiddleNode);
+
+	RightNode = new HexNode(get_Size(), (get_Size() / 2), *this, IDKeeper);
+	IDKeeper++;
+	for (int i = 0; i < get_Size(); ++i)
+	{
+		RightNode->AddConnection(&m_Grid[get_Size() - 1][i]);
+		m_Grid[get_Size() - 1][i].AddConnection(RightNode);
+	}
+	CalculateCoordsSpecialNodes(RightNode, MiddleNode);
+	LeftNode->m_SetState(State::BLUE);
+	RightNode->m_SetState(State::BLUE);
+	TopNode->m_SetState(State::RED);
+	BottomNode->m_SetState(State::RED);
 }
 
-void HexGrid::CalculateCubicalCoordinates()
+auto HexGrid::CalculateCubicalCoordinates() -> void
 {
 	vector<HexNode*> EvaluatedSet;
 	int MiddleX = m_Size / 2;
@@ -94,47 +142,51 @@ void HexGrid::CalculateCubicalCoordinates()
 }
 
 
-auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
+auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 {
-	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
-	HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
+	//HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
+	//HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
 
 	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
 	{
 		//No path possible
 		return vector<HexNode*>();
 	}
-
 	vector<HexNode*> OpenSet;
-	unordered_set<HexNode*> ClosedSet; //unordered_set blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
-	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[(StartNode)->m_GetHexGrid()->get_Size() * (StartNode)->m_GetHexGrid()->get_Size()]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+	vector<HexNode*> ClosedSet;
+	int size = (StartNode)->m_GetHexGrid()->get_Size();
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+	
+	for (int i = 0; i < 4; ++i)
+	{
+		(&*mappedData)[size * size + i].isSpecial = true;
+	} 
 
 	OpenSet.push_back(StartNode);
 	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
-
 	NodeAstarData start;
 	NodeAstarData end;
 	(&*mappedData)[StartNode->m_GetID()] = start;
 	(&*mappedData)[EndNode->m_GetID()] = end;
-
 	while (OpenSet.size() > 0)
 	{
 		HexNode* CurrentLocation = OpenSet.front();
-		for (int i = 0; i < OpenSet.size(); ++i)
+		//Gezien de beperkte grootte van de OpenSet, is het voor mij sneller om de hele set te doorzoeken dan om een binary heap te implementen en steeds te sorteren. Daar waar hij met heap ~44 microseconden neemt worst case, en ~25 microseconden zonder op mijn eigen pc.
+		for (auto it = OpenSet.begin(); it != OpenSet.end(); it++)
 		{
-			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost())
+			if ((&*mappedData)[(*it)->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost())
 			{
-				CurrentLocation = OpenSet[i];
+				CurrentLocation = (*it);
 			}
 		}
-		OpenSet.erase(std::remove(OpenSet.begin(),OpenSet.end(),CurrentLocation));
+		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
 		(&*mappedData)[CurrentLocation->m_GetID()].m_isInOpenSet = false;
-		ClosedSet.insert(CurrentLocation);
+		ClosedSet.push_back(CurrentLocation);
 		(&*mappedData)[CurrentLocation->m_GetID()].m_isInClosedSet = true;
 
 		if (CurrentLocation == EndNode)
 		{
-			return RetracePath(StartNode,EndNode,mappedData);
+			return RetracePath(StartNode, EndNode, mappedData);
 		}
 
 		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
@@ -148,7 +200,7 @@ auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNode
 			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 			{
 				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
-				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor,EndNode);
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, EndNode);
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 				{
@@ -175,80 +227,31 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 	return path;
 }
 
-/* Broken Heap
-auto HexGrid::FindPath(int StartNodeX, int StartNodeY, int EndNodeX, int EndNodeY) -> vector<HexNode*>
+auto HexGrid::ComputeBestMove(Move m) -> Move
 {
-	HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
-	HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
+	State IsVictorious = GetVictorious();
 
-	int Size = (StartNode)->m_GetHexGrid()->get_Size();
+	MessageBox(NULL, std::to_wstring((char)IsVictorious).c_str(), L"", MB_OK);
 
-	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[Size * Size]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
-	deque<HexNode*> TSet(Size * Size); //Moet nog een heap worden
-	MinHeap OpenSet(TSet,mappedData);
-	unordered_set<HexNode*> ClosedSet(Size*Size); //unordered_set blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
-	
-	OpenSet.Insert(StartNode);
-	NodeAstarData start;
-	(&*mappedData)[StartNode->m_GetID()] = start;
-	(&*mappedData)[EndNode->m_GetID()] = start;
 
-	while (OpenSet.GetMinFCostNode() != nullptr)
-	{
-		HexNode* CurrentLocation = OpenSet.GetMinFCostNode();
 
-		OpenSet.DeleteMinFCostNode();
-		ClosedSet.insert(CurrentLocation);
 
-		if (CurrentLocation == EndNode)
-		{
-			//Traceer path
-			return RetracePath(StartNode, EndNode, mappedData);
-		}
-		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
-		{
-			HexNode* NghBor = *it;
-			if (NghBor->m_GetState() != StartNode->m_GetState() && NghBor->m_GetState() != State::NONE || std::find(ClosedSet.begin(), ClosedSet.end(), NghBor) != ClosedSet.end())
-			{
-				continue;
-			}
-			int newMoveCostToNgh = (&*mappedData)[NghBor->m_GetID()].m_gCost + GetDistance(CurrentLocation->m_GetX(), CurrentLocation->m_GetY(), NghBor->m_GetX(), NghBor->m_GetY());
-			if (newMoveCostToNgh < (&*mappedData)[NghBor->m_GetID()].m_gCost || std::find(OpenSet.begin(), OpenSet.end(), NghBor) == OpenSet.end())
-			{
-				NodeAstarData nData;
-				nData.m_gCost = newMoveCostToNgh;
-				nData.m_hCost = GetDistance(NghBor->m_GetX(), NghBor->m_GetY(), EndNode->m_GetX(), EndNode->m_GetY());
-				nData.m_Parent = CurrentLocation;
 
-				if (std::find(OpenSet.begin(), OpenSet.end(), NghBor) == OpenSet.end())
-				{
-					OpenSet.Insert(NghBor);
-					(&*mappedData)[NghBor->m_GetID()] = nData;
-				}
-				else
-				{
-					int index = std::find(OpenSet.begin(), OpenSet.end(), NghBor) - OpenSet.begin();
-					if (index < OpenSet.size())
-					{
-						OpenSet.SortNodeUp(index);
-					}
-				}
-			}
-		}
-	}
-	return vector<HexNode*>();
+	return Move{ 0,0,0 };
 }
 
-auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarData>& nData) -> vector<HexNode*>
+State HexGrid::GetVictorious()
 {
-	vector<HexNode*> path;
-	HexNode* CurrentObserved = End;
-	while (CurrentObserved != Start)
+	vector<HexNode*> BlueSet = FindPath(LeftNode,RightNode);
+	vector<HexNode*> RedSet = FindPath(TopNode,BottomNode);
+	if (BlueSet.size() == 0 && RedSet.size() == 0)
 	{
-		path.push_back(CurrentObserved);
-		CurrentObserved = (&*nData)[CurrentObserved->m_GetID()].m_Parent;
+		return State::NONE;
 	}
-	path.push_back(Start);
-	std::reverse(path.begin(), path.end());
-	return path;
-} */
+	else
+		if (BlueSet.size() == 0)
+			return State::RED;
+		else
+			return State::BLUE;
+}
+
