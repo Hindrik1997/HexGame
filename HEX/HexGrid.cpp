@@ -227,17 +227,9 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 	return path;
 }
 
-auto HexGrid::ComputeBestMove(Move m) -> Move
+auto HexGrid::ComputeBestMove(int MaxIts) -> Move
 {
-	State IsVictorious = GetVictorious();
-
-	MessageBox(NULL, std::to_wstring((char)IsVictorious).c_str(), L"", MB_OK);
-
-
-
-
-
-	return Move{ 0,0,0 };
+	
 }
 
 State HexGrid::GetVictorious()

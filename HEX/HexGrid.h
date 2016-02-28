@@ -33,12 +33,13 @@ public:
 	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
-	Move ComputeBestMove(Move m);
+	Move ComputeBestMove(int MaxIts);
 	State GetVictorious();
 	HexNode* TopNode;
 	HexNode* BottomNode;
 	HexNode* LeftNode;
 	HexNode* RightNode;
+	State CurrentMoveAllowedPlayer = State::BLUE;
 };
 
 //Const versie van de () operator voor const Hexgrids
