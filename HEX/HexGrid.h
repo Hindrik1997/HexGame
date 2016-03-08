@@ -32,14 +32,18 @@ private:
 public:
 	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
+	static void GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet, const vector<HexNode*>& TotalSet);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
-	Move ComputeBestMove(int MaxIts);
+	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
+	static vector<HexNode*> GetFilteredPath(vector<HexNode*>& Path, HexNode* StartNode, HexNode* EndNode);
+	Move ComputeBestMove();
 	State GetVictorious();
+	State HumanPlayer = State::BLUE;
+	vector<std::pair<int, int>> GetMoves();
 	HexNode* TopNode;
 	HexNode* BottomNode;
 	HexNode* LeftNode;
 	HexNode* RightNode;
-	State CurrentMoveAllowedPlayer = State::BLUE;
 };
 
 //Const versie van de () operator voor const Hexgrids

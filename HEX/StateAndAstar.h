@@ -36,5 +36,5 @@ struct Move
 {
 	int x;
 	int y;
-	int score;
+	State Color;
 };

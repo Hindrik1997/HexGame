@@ -141,17 +141,15 @@ auto HexGrid::CalculateCubicalCoordinates() -> void
 	CalculateCoordsAndNeighbours(MiddleNode, MiddleNode, EvaluatedSet);
 }
 
-
 auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 {
-	//HexNode* StartNode = &m_Grid[StartNodeX][StartNodeY];
-	//HexNode* EndNode = &m_Grid[EndNodeX][EndNodeY];
-
 	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
 	{
 		//No path possible
 		return vector<HexNode*>();
 	}
+
+
 	vector<HexNode*> OpenSet;
 	vector<HexNode*> ClosedSet;
 	int size = (StartNode)->m_GetHexGrid()->get_Size();
@@ -193,7 +191,7 @@ auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 		{
 			HexNode* NghBor = *it;
 
-			if ( /*  If Not traversable */  (NghBor->m_GetState() != State::NONE && NghBor->m_GetState() != CurrentLocation->m_GetState()) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+			if ( /*  If Not traversable */  (NghBor->m_GetState() != State::NONE && NghBor->m_GetState() != CurrentLocation->m_GetState()) /* Of in Closed Set */ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
 				continue;
 
 			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + GetDistance(CurrentLocation, NghBor);
@@ -227,12 +225,161 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 	return path;
 }
 
-auto HexGrid::ComputeBestMove(int MaxIts) -> Move
+auto HexGrid::ComputeBestMove() -> Move
 {
+
+	int MinDistanceToBorder = 999;
+	std::pair<int, int> TPair;
+
+	vector<HexNode*> ObservedSet;
+	vector< vector<HexNode*> > Paths;
+
+	for (int x = 0; x < m_Size; ++x)
+	{
+		for (int y = 0; y < m_Size; ++y)
+		{
+			if (m_Grid[x][y].m_GetState() == HumanPlayer && std::find(ObservedSet.begin(), ObservedSet.end(), &m_Grid[x][y]) == ObservedSet.end())
+			{
+				vector<HexNode*> TempSet;
+				GetConnectedNodeSet(&m_Grid[x][y], TempSet, ObservedSet);
+				for (auto& elem : TempSet)
+				{
+					ObservedSet.push_back(elem);
+				}
+				if (TempSet.size() > 1)
+					Paths.push_back(TempSet);
+			}
+		}
+	}
+
+	vector< vector<HexNode*> > TSet;
+
+	for (int i = 0; i < Paths.size(); ++i)
+	{
+		bool IsConnectedToSides = false;
+		for (int j = 0; j < Paths[i].size(); ++j)
+		{
+			if (Paths[i][j]->m_GetX() == 0 || Paths[i][j]->m_GetY() == 0 || Paths[i][j]->m_GetX() == m_Size - 1 || Paths[i][j]->m_GetY() == m_Size - 1)
+			{
+				IsConnectedToSides = true;
+				break;
+			}
+		}
+		if (IsConnectedToSides)
+		{
+			TSet.push_back(Paths[i]);
+		}
+	}
+	Paths.clear();
+	Paths = TSet;
+
+	State PrevState;
+	HexNode* FirstNode;
+	HexNode* SecondNode;
+	if (HumanPlayer == State::RED)
+	{
+		FirstNode = TopNode;
+		SecondNode = BottomNode;
+		PrevState = State::RED;
+	}
+	else
+	{
+		FirstNode = LeftNode;
+		SecondNode = RightNode;
+		PrevState = State::BLUE;
+	}
+
+	FirstNode->m_SetState(State::NONE);
+	SecondNode->m_SetState(State::NONE);
+
+	for (int x = 0; x < m_Size; ++x)
+	{
+		for (int y = 0; y < m_Size; ++y)
+		{
+			if (m_Grid[x][y].m_GetState() == HumanPlayer && OccursInSets(&m_Grid[x][y], Paths) == false)
+			{
+				int FDistance = FindPath(&m_Grid[x][y], FirstNode).size();
+				int SDistance = FindPath(&m_Grid[x][y], SecondNode).size();
+
+				if (FDistance < MinDistanceToBorder)
+				{
+					TPair.first = x;
+					TPair.second = y;
+					MinDistanceToBorder = FDistance;
+				}
+				if (SDistance < MinDistanceToBorder)
+				{
+					TPair.first = x;
+					TPair.second = y;
+					MinDistanceToBorder = SDistance;
+				}
+			}
+		}
+	}
+
+	FirstNode->m_SetState(PrevState);
+	SecondNode->m_SetState(PrevState);
+
+	HexNode* FoundPoint = &(*this)(TPair.first, TPair.second);
+
+	FirstNode->m_SetState(State::NONE);
+	SecondNode->m_SetState(State::NONE);
+
+	vector<HexNode*> PathA = FindPath(FoundPoint, FirstNode);
+	PathA = GetFilteredPath(PathA, FoundPoint, FirstNode);
+	vector<HexNode*> PathB = FindPath(FoundPoint, SecondNode);
+	PathB = GetFilteredPath(PathB, FoundPoint, SecondNode);
+
+	FirstNode->m_SetState(PrevState);
+	SecondNode->m_SetState(PrevState);
+
+	HexNode* TargetNode = PathA.size() > PathB.size() ? SecondNode : FirstNode;
+	vector<HexNode*> Path = PathA.size() > PathB.size() ? PathB : PathA;
+
+	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
 	
+	vector<HexNode*> NodeSet;
+	for (int i = 0; i < Path.size(); ++i)
+	{
+		for (int j = 0; j < Path[i]->m_Neighbours.size(); ++j)
+		{
+			HexNode* NghBor = Path[i]->m_Neighbours[j];
+
+			if (std::find(NodeSet.begin(), NodeSet.end(), NghBor) == NodeSet.end() && NghBor != LeftNode && NghBor != RightNode && NghBor != TopNode && NghBor != BottomNode && NghBor != FoundPoint && NghBor != TargetNode && NghBor->m_GetState() == State::NONE)
+			{
+				NodeSet.push_back(NghBor);
+			}
+		}
+	}
+
+	int NewLength = 99999;
+	int NodeIndex = -1;
+
+	for (int i = 0; i < NodeSet.size(); ++i)
+	{
+			//Place node, recalculate path length.
+			State OriginalState = NodeSet[i]->m_GetState();
+			NodeSet[i]->m_SetState(OppositeState);
+
+			vector<HexNode*> NewPath = FindPath(FoundPoint, TargetNode);
+			NewPath = GetFilteredPath(NewPath, FoundPoint, TargetNode);
+
+			if (NewPath.size() < NewLength)
+			{
+				NewLength = NewPath.size();
+				NodeIndex = i;
+			}
+			NodeSet[i]->m_SetState(OriginalState);
+	}
+
+
+	
+	HexNode* Final = NodeSet[NodeIndex];
+
+	return Move{ Final->m_GetX(), Final->m_GetY(), Final->m_GetState() };
 }
 
-State HexGrid::GetVictorious()
+auto HexGrid::GetVictorious() -> State
 {
 	vector<HexNode*> BlueSet = FindPath(LeftNode,RightNode);
 	vector<HexNode*> RedSet = FindPath(TopNode,BottomNode);
@@ -247,3 +394,57 @@ State HexGrid::GetVictorious()
 			return State::BLUE;
 }
 
+auto HexGrid::GetMoves() -> vector<std::pair<int, int>>
+{
+	vector<std::pair<int, int>> Moves;
+	for (int x = 0; x < m_Size; ++x)
+	{
+		for (int y = 0; y < m_Size; ++y)
+		{
+			if ((*this)(x, y).m_GetState() == State::NONE)
+			{
+				Moves.push_back(std::make_pair(x,y));
+			}
+		}
+	}
+	return Moves;
+}
+
+auto HexGrid::GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet,const vector<HexNode*>& TotalSet) -> void
+{
+	CurrentSet.push_back(StartNode);
+	for (int i = 0; i < StartNode->m_Neighbours.size(); ++i)
+	{
+		//If not in both sets and equals the startnode's state and is not a special node
+		if (StartNode->m_Neighbours[i]->m_GetState() == StartNode->m_GetState() && std::find(CurrentSet.begin(), CurrentSet.end(), StartNode->m_Neighbours[i]) == CurrentSet.end() && std::find(TotalSet.begin(), TotalSet.end(), StartNode->m_Neighbours[i]) == TotalSet.end() && StartNode->m_Neighbours[i] != StartNode->m_GetHexGrid()->LeftNode && StartNode->m_Neighbours[i] != StartNode->m_GetHexGrid()->RightNode && StartNode->m_Neighbours[i] != StartNode->m_GetHexGrid()->BottomNode && StartNode->m_Neighbours[i] != StartNode->m_GetHexGrid()->TopNode)
+		{
+			GetConnectedNodeSet(StartNode->m_Neighbours[i], CurrentSet, TotalSet);
+		}
+	}	
+}
+
+auto HexGrid::OccursInSets(HexNode* Node, vector<vector<HexNode*>>& Set) -> bool
+{
+	for (int i = 0; i < Set.size(); ++i)
+	{
+		for (int j = 0; j < Set[i].size(); ++j)
+		{
+			if (Node == Set[i][j])
+				return true;
+		}
+	}
+	return false;
+}
+
+vector<HexNode*> HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * StartNode, HexNode * EndNode)
+{
+	vector<HexNode*> FPath;
+	for (int i = 0; i < Path.size(); ++i)
+	{
+		if (Path[i] != StartNode && Path[i] != EndNode)
+		{
+			FPath.push_back(Path[i]);
+		}
+	}
+	return FPath;
+}

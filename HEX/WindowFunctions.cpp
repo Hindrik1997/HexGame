@@ -88,11 +88,14 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
 					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
 					*/
+					
 					/*
 					HDC hdc = GetDC(hwnd);
 					UpdateHexes(hdc,*g_hexGrid);
 					auto t1 = std::chrono::high_resolution_clock::now();
-					oldPath = g_hexGrid->FindPath(&(*g_hexGrid)(0,0), &(*g_hexGrid)(10,10));
+					g_hexGrid->RightNode->m_SetState(State::NONE);
+					oldPath = g_hexGrid->FindPath(&(*g_hexGrid)(5,5), g_hexGrid->RightNode);
+					g_hexGrid->RightNode->m_SetState(State::NONE);
 					auto t2 = std::chrono::high_resolution_clock::now();
 					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
@@ -104,14 +107,20 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					for (auto it = oldPath.begin(); it != oldPath.end(); it++)
 					{
 						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
-					}
-					*/
+					}*/
+					
+					
+					
+					
 					if (g_hexGrid != nullptr)
 					{
-						g_hexGrid->CurrentMoveAllowedPlayer = State::RED;
-						Move m = g_hexGrid->ComputeBestMove(1000000);
+						Move m = g_hexGrid->ComputeBestMove();
+						MessageBox(NULL, std::to_wstring(m.x).c_str(),std::to_wstring( m.y).c_str(), MB_OK);
 						(*g_hexGrid)(m.x, m.y).m_SetState(State::RED);
+						HDC dc = GetDC(hwnd);
+						UpdateHexes(dc, *g_hexGrid);
 					}
+					
 				}
 				break;
 			}
