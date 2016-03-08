@@ -31,6 +31,7 @@ private:
 	void CalculateCubicalCoordinates();
 public:
 	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
+	vector<HexNode*> FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
 	static void GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet, const vector<HexNode*>& TotalSet);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);

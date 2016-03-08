@@ -42,7 +42,6 @@ HexGrid::HexGrid(unsigned int size) : m_Size(size)
 	CalculateCubicalCoordinates();
 }
 
-
 HexGrid::~HexGrid()
 {
 	if (BottomNode)
@@ -228,6 +227,7 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 auto HexGrid::ComputeBestMove() -> Move
 {
 
+	/*
 	int MinDistanceToBorder = 999;
 	std::pair<int, int> TPair;
 
@@ -371,9 +371,65 @@ auto HexGrid::ComputeBestMove() -> Move
 			}
 			NodeSet[i]->m_SetState(OriginalState);
 	}
-
-
+	*/
+	vector<HexNode*> BestPotentialPath;
+	State PrevState;
+	HexNode* FirstNode;
+	HexNode* SecondNode;
+	if (HumanPlayer == State::RED)
+	{
+		FirstNode = TopNode;
+		SecondNode = BottomNode;
+		PrevState = State::RED;
+	}
+	else
+	{
+		FirstNode = LeftNode;
+		SecondNode = RightNode;
+		PrevState = State::BLUE;
+	}
+	BestPotentialPath = FindBestPotentialPath(FirstNode,SecondNode);
+	BestPotentialPath = GetFilteredPath(BestPotentialPath, FirstNode,SecondNode);
+	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
+	vector<HexNode*> NodeSet = BestPotentialPath;
 	
+	for (int i = 0; i < BestPotentialPath.size(); ++i)
+	{
+		for (int j = 0; j < BestPotentialPath[i]->m_Neighbours.size(); ++j)
+		{
+			HexNode* NghBor = BestPotentialPath[i]->m_Neighbours[j];
+
+			if (std::find(NodeSet.begin(), NodeSet.end(), NghBor) == NodeSet.end() && NghBor != LeftNode && NghBor != RightNode && NghBor != TopNode && NghBor != BottomNode  && NghBor->m_GetState() == State::NONE)
+			{
+				NodeSet.push_back(NghBor);
+			}
+		}
+	}
+
+	int NewLength = 99999;
+	int NodeIndex = -1;
+
+	for (int i = 0; i < NodeSet.size(); ++i)
+	{
+		if (NodeSet[i]->m_GetState() != State::NONE)
+			continue;
+		//Place node, recalculate path length.
+		State OriginalState = NodeSet[i]->m_GetState();
+		NodeSet[i]->m_SetState(OppositeState);
+
+		vector<HexNode*> NewPath = FindPath(FirstNode, SecondNode);
+		FirstNode->m_SetState(PrevState);
+		SecondNode->m_SetState(PrevState);
+		NewPath = GetFilteredPath(NewPath, FirstNode, SecondNode);
+
+		if (NewPath.size() < NewLength)
+		{
+			NewLength = NewPath.size();
+			NodeIndex = i;
+		}
+		NodeSet[i]->m_SetState(OriginalState);
+	}
+
 	HexNode* Final = NodeSet[NodeIndex];
 
 	return Move{ Final->m_GetX(), Final->m_GetY(), Final->m_GetState() };
@@ -447,4 +503,74 @@ vector<HexNode*> HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * Star
 		}
 	}
 	return FPath;
+}
+
+auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
+{
+	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
+	{
+		//No path possible
+		return vector<HexNode*>();
+	}
+	
+	State StartState = StartNode->m_GetState();
+	State OppositeState = StartState == State::RED ? State::BLUE : State::RED;
+	vector<HexNode*> OpenSet;
+	vector<HexNode*> ClosedSet;
+	int size = (StartNode)->m_GetHexGrid()->get_Size();
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		(&*mappedData)[size * size + i].isSpecial = true;
+	}
+
+	OpenSet.push_back(StartNode);
+	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+	NodeAstarData start;
+	NodeAstarData end;
+	(&*mappedData)[StartNode->m_GetID()] = start;
+	(&*mappedData)[EndNode->m_GetID()] = end;
+	while (OpenSet.size() > 0)
+	{
+		HexNode* CurrentLocation = OpenSet.front();
+		for (auto it = OpenSet.begin(); it != OpenSet.end(); it++)
+		{
+			if ( ( (*it)->m_GetState() == StartState ? (&*mappedData)[(*it)->m_GetID()].m_fCost() : (&*mappedData)[(*it)->m_GetID()].m_fCost() * 50) < ( CurrentLocation->m_GetState() == StartState ? (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost() : (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost() * 50) )
+			{
+				CurrentLocation = (*it);
+			}
+		}
+		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInOpenSet = false;
+		ClosedSet.push_back(CurrentLocation);
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInClosedSet = true;
+
+		if (CurrentLocation == EndNode)
+		{
+			return RetracePath(StartNode, EndNode, mappedData);
+		}
+
+		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
+		{
+			HexNode* NghBor = *it;
+
+			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* Of in Closed Set */ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+				continue;
+
+			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + GetDistance(CurrentLocation, NghBor);
+			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+			{
+				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, EndNode);
+				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
+				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+				{
+					OpenSet.push_back(NghBor);
+					(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet = true;
+				}
+			}
+		}
+	}
+	return vector<HexNode*>();
 }
