@@ -277,7 +277,201 @@ auto HexGrid::ComputeBestMove() -> Move
 			BestPotentialPath[i]->m_SetState(PrevState);
 		}
 
-		return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+		Move opponLast;
+		if (PlayedMoves.size() != 0)
+		{
+			//Get last played move by human player
+			opponLast = PlayedMoves[PlayedMoves.size() - 1];
+
+			if (BestPotentialPath[NodeIndex]->m_GetX() == opponLast.x && BestPotentialPath[NodeIndex]->m_GetY() == opponLast.y)
+				return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+		}
+		else
+		{
+			return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+		}
+
+		Move CurrentBestMove = Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+
+		//Consider what happens when we play this one, based on the last played node by the human
+
+		bool IsConnectedToFirst = FindPath(&m_Grid[opponLast.x][opponLast.y], FirstNode).size() == 0 ? false : true;
+		bool IsConnectedToSecond = FindPath(&m_Grid[opponLast.x][opponLast.y], SecondNode).size() == 0 ? false : true;
+		if (IsConnectedToFirst && !IsConnectedToSecond)
+		{
+			vector<HexNode*> SecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+			//Connected aan first, niet aan second
+			if (SecondPath.size() <= NewLength)
+			{
+				//Play this one instead
+				int SecondNewLength = -1;
+				int SecondNodeIndex = -1;
+
+				for (int i = 0; i < SecondPath.size(); i++)
+				{
+					if (SecondPath[i]->m_GetState() != State::NONE)
+						continue;
+					//Remember state
+					State PrevState = SecondPath[i]->m_GetState();
+					SecondPath[i]->m_SetState(OppositeState);
+
+					vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+					if ((int)NewPotentialPath.size() == 0)
+					{
+						SecondPath[i]->m_SetState(PrevState);
+						SecondNewLength = NewPotentialPath.size();
+						SecondNodeIndex = i;
+						break;
+					}
+
+					if ((int)NewPotentialPath.size() > SecondNewLength)
+					{
+						SecondNewLength = NewPotentialPath.size();
+						SecondNodeIndex = i;
+					}
+					SecondPath[i]->m_SetState(PrevState);
+				}
+				return Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+			}
+			else
+			{
+				return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+			}
+		}
+		else
+		{
+			if (!IsConnectedToFirst && IsConnectedToSecond)
+			{
+				vector<HexNode*> SecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+				//Connected aan first, niet aan second
+				if (SecondPath.size() <= NewLength)
+				{
+					//Play this one instead
+					int SecondNewLength = -1;
+					int SecondNodeIndex = -1;
+
+					for (int i = 0; i < SecondPath.size(); i++)
+					{
+						if (SecondPath[i]->m_GetState() != State::NONE)
+							continue;
+						//Remember state
+						State PrevState = SecondPath[i]->m_GetState();
+						SecondPath[i]->m_SetState(OppositeState);
+
+						vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+						if ((int)NewPotentialPath.size() == 0)
+						{
+							SecondPath[i]->m_SetState(PrevState);
+							SecondNewLength = NewPotentialPath.size();
+							SecondNodeIndex = i;
+							break;
+						}
+
+						if ((int)NewPotentialPath.size() > SecondNewLength)
+						{
+							SecondNewLength = NewPotentialPath.size();
+							SecondNodeIndex = i;
+						}
+						SecondPath[i]->m_SetState(PrevState);
+					}
+					return Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+				}
+				else
+				{
+					return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+				}
+			}
+			else
+			{
+
+				vector<HexNode*> TFirstPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+				vector<HexNode*> TSecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+
+				if (TFirstPath.size() > TSecondPath.size())
+				{
+					//Search for second node
+					if (TSecondPath.size() <= NewLength)
+					{
+						//Play this one instead
+						int SecondNewLength = -1;
+						int SecondNodeIndex = -1;
+
+						for (int i = 0; i < TSecondPath.size(); i++)
+						{
+							if (TSecondPath[i]->m_GetState() != State::NONE)
+								continue;
+							//Remember state
+							State PrevState = TSecondPath[i]->m_GetState();
+							TSecondPath[i]->m_SetState(OppositeState);
+
+							vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+							if ((int)NewPotentialPath.size() == 0)
+							{
+								TSecondPath[i]->m_SetState(PrevState);
+								SecondNewLength = NewPotentialPath.size();
+								SecondNodeIndex = i;
+								break;
+							}
+
+							if ((int)NewPotentialPath.size() > SecondNewLength)
+							{
+								SecondNewLength = NewPotentialPath.size();
+								SecondNodeIndex = i;
+							}
+							TSecondPath[i]->m_SetState(PrevState);
+						}
+						return Move{ TSecondPath[SecondNodeIndex]->m_GetX(),TSecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+					}
+					else
+					{
+						return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+					}
+
+
+				}
+				else
+				{
+					//Search for first node
+					//Search for second node
+					if (TFirstPath.size() <= NewLength)
+					{
+						//Play this one instead
+						int SecondNewLength = -1;
+						int SecondNodeIndex = -1;
+
+						for (int i = 0; i < TFirstPath.size(); i++)
+						{
+							if (TFirstPath[i]->m_GetState() != State::NONE)
+								continue;
+							//Remember state
+							State PrevState = TFirstPath[i]->m_GetState();
+							TFirstPath[i]->m_SetState(OppositeState);
+
+							vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+							if ((int)NewPotentialPath.size() == 0)
+							{
+								TFirstPath[i]->m_SetState(PrevState);
+								SecondNewLength = NewPotentialPath.size();
+								SecondNodeIndex = i;
+								break;
+							}
+
+							if ((int)NewPotentialPath.size() > SecondNewLength)
+							{
+								SecondNewLength = NewPotentialPath.size();
+								SecondNodeIndex = i;
+							}
+							TFirstPath[i]->m_SetState(PrevState);
+						}
+						return Move{ TFirstPath[SecondNodeIndex]->m_GetX(),TFirstPath[SecondNodeIndex]->m_GetY(), OppositeState };
+					}
+					else
+					{
+						return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+					}
+				}
+			}
+		}
 }
 
 auto HexGrid::GetVictorious() -> State
