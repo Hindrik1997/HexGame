@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <Windows.h>
 
 using std::vector;
 using std::unique_ptr;
@@ -37,8 +38,11 @@ public:
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
 	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 	static vector<HexNode*> GetFilteredPath(vector<HexNode*>& Path, HexNode* StartNode, HexNode* EndNode);
+	void PlayMove(Move move, HWND hwnd);
 	Move ComputeBestMove();
 	State GetVictorious();
+public:
+	vector<Move> PlayedMoves;
 	State HumanPlayer = State::BLUE;
 	vector<std::pair<int, int>> GetMoves();
 	HexNode* TopNode;

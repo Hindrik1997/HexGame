@@ -13,14 +13,13 @@ En op basis van deze pointer weet ik dus de instance en call ik de bijhorende Wn
 De WndProc van de windowclass (De Windows window class, niet de c++ class) verwijst naar een static WndProc welke de verborgen pointer uit leest.
 Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel is met windows' zijn WndProc functie pointer vereiste. (Wat een standaar C functie is)
 */
-
-
-HWND CommandField, AcceptButton, ViewList, CommandTextLabel,PathButton;
+HWND CommandField, AcceptButton, ViewList, CommandTextLabel, PathButton;
 vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
 int LeftOffset = 60;
 int TopOffset = 80;
 int HexGrootte = 30;
+bool CallInitUpdate = false;
 
 auto CheckMessage() -> bool
 {
@@ -43,11 +42,11 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 	{
 		case WM_CREATE:
 		{
-			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Commando: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
+			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Command: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
-			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accepteer", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
-			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Pad", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)2, NULL, NULL);
-			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welkom bij H3X: The Game! \n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
+			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accept", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
+			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
+			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by H3X: The Game! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
 		case WM_CTLCOLORSTATIC:
@@ -79,7 +78,6 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			{
 			case 1:
 				{
-					/*
 					//Commando's processen
 					int length = GetWindowTextLength(ViewList) + 1;
 					std::unique_ptr<WCHAR> TextBuffer(new WCHAR[length]);
@@ -88,9 +86,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					int length2 = GetWindowTextLength(CommandField) + 1;
 					std::unique_ptr<WCHAR> TextBuffer2(new WCHAR[length2]);
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
-					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
-					*/
-					
+					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));					
 					/*
 					HDC hdc = GetDC(hwnd);
 					UpdateHexes(hdc,*g_hexGrid);
@@ -110,41 +106,10 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					{
 						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
 					}
-					*/
-					
-					if (g_hexGrid != nullptr)
-					{
-						if (g_hexGrid->GetVictorious() != State::NONE)
-						{
-							wstring t;
-							if (g_hexGrid->GetVictorious() == State::RED)
-								t = L"Rood";
-							else
-								t = L"Blauw";
-
-							MessageBox(NULL, t.c_str(), L"En de winnaar is:", MB_OK);
-							break;
-						}
-						Move m = g_hexGrid->ComputeBestMove();
-						State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
-						(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
-						HDC dc = GetDC(hwnd);
-						UpdateHexes(dc, *g_hexGrid);
-						if (g_hexGrid->GetVictorious() != State::NONE)
-						{
-							wstring t;
-							if (g_hexGrid->GetVictorious() == State::RED)
-								t = L"Rood";
-							else
-								t = L"Blauw";
-
-							MessageBox(NULL, t.c_str(), L"En de winnaar is:", MB_OK);
-						}
-					}
-					
+					*/	
 				}
 				break;
-			case 2:
+			case 5:
 			{
 				if (g_hexGrid != nullptr)
 				{
@@ -166,8 +131,6 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				}
 			}
 			break;
-
-
 			}
 			break;
 		case WM_LBUTTONDOWN:
@@ -181,38 +144,27 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				Pos.x = abs(Pos.x);
 
 				HexNode* cNode = GetHexNodeByCoords(Pos.x, Pos.y, *g_hexGrid);
-				if (cNode != nullptr) 
+				if (cNode != nullptr && g_hexGrid != nullptr) 
 				{
 					//Node has been hit as a bitch!
-					cNode->m_SetState(State::RED);
-					HDC hdc = GetDC(hwnd);
-					FillHexRed(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
+					if (g_hexGrid != nullptr)
+					{
+						g_hexGrid->PlayMove(Move{ cNode->m_GetX(), cNode->m_GetY(), State::NONE },hwnd);
+					}
 				}
 			}
 		}
 		break;
-		case WM_RBUTTONDOWN:
-			POINT Pos;
-			GetCursorPos(&Pos);
-			if (ScreenToClient(hwnd, &Pos) != 0)
-			{
-				//Er is geklikt, mogelijk op een hexagon
-				Pos.y = abs(Pos.y);
-				Pos.x = abs(Pos.x);
-
-				HexNode* cNode = GetHexNodeByCoords(Pos.x, Pos.y, *g_hexGrid);
-				if (cNode != nullptr)
-				{
-					//Node has been hit as a bitch!
-					cNode->m_SetState(State::BLUE);
-					HDC hdc = GetDC(hwnd);
-					FillHexBlue(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
-
-				}
-			}
-			break;
 		default:
+		{
+			HDC dc = GetDC(hwnd);
+			if (CallInitUpdate)
+			{
+				UpdateHexes(dc, *g_hexGrid);
+				CallInitUpdate = false;
+			}
 			return DefWindowProc(hwnd, msg, wParam, lParam);
+		}
 	}
 	return 0;
 }
@@ -280,13 +232,19 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 	}
 	else
 	{
-		Contents += L"\r\nOnbekend commando!";
+		Contents += L"\r\nUnknown command!";
 		SetWindowText(ViewList, Contents.c_str());
 	}
 }
 
 auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 {
+	wstring kleur = g_hexGrid->HumanPlayer == State::BLUE ? L"You play as blue" : L"You play as red";
+
+	HBRUSH WhiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+	SelectObject(hdc,WhiteBrush);
+	TextOut(hdc, 10, 500, kleur.c_str(), kleur.length());
+	DeleteObject(WhiteBrush);
 	HBRUSH NoneBrush = CreateSolidBrush(RGB(240, 240, 240));
 	HBRUSH RedBrush = CreateSolidBrush(RGB(255,0,0));
 	HBRUSH BlueBrush = CreateSolidBrush(RGB(0,0,255));

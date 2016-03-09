@@ -22,7 +22,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	HexGrid h(11);
 	g_hexGrid = &h;
 	DrawHexes(hdc,*g_hexGrid);
-
+	CallInitUpdate = true;
 	//Main loop
 	do
 	{

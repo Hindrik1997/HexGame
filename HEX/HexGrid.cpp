@@ -38,6 +38,11 @@ HexGrid::HexGrid(unsigned int size) : m_Size(size)
 		MessageBox(NULL, L"Ongeldige grootte gespecifiseerd!", L"Fout!", MB_ICONEXCLAMATION | MB_OK);
 		throw std::invalid_argument("Ongeldige grid grootte"); //Lekker een exception gooien :)
 	}
+
+	if (MessageBox(NULL, L"Do you want to play with red?", L"Color choice:", MB_YESNO) == IDYES) 
+	{
+		HumanPlayer = State::RED;
+	}
 	CreateGrid();
 	CalculateCubicalCoordinates();
 }
@@ -209,7 +214,7 @@ auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 	return vector<HexNode*>();
 }
 
-auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarData>& nData) -> vector<HexNode*>
+auto HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarData>& nData) -> vector<HexNode*>
 {
 	vector<HexNode*> path;
 	HexNode* CurrentObserved = End;
@@ -225,216 +230,6 @@ auto  HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarD
 
 auto HexGrid::ComputeBestMove() -> Move
 {
-
-	/*
-	int MinDistanceToBorder = 999;
-	std::pair<int, int> TPair;
-
-	vector<HexNode*> ObservedSet;
-	vector< vector<HexNode*> > Paths;
-
-	for (int x = 0; x < m_Size; ++x)
-	{
-		for (int y = 0; y < m_Size; ++y)
-		{
-			if (m_Grid[x][y].m_GetState() == HumanPlayer && std::find(ObservedSet.begin(), ObservedSet.end(), &m_Grid[x][y]) == ObservedSet.end())
-			{
-				vector<HexNode*> TempSet;
-				GetConnectedNodeSet(&m_Grid[x][y], TempSet, ObservedSet);
-				for (auto& elem : TempSet)
-				{
-					ObservedSet.push_back(elem);
-				}
-				if (TempSet.size() > 1)
-					Paths.push_back(TempSet);
-			}
-		}
-	}
-
-	vector< vector<HexNode*> > TSet;
-
-	for (int i = 0; i < Paths.size(); ++i)
-	{
-		bool IsConnectedToSides = false;
-		for (int j = 0; j < Paths[i].size(); ++j)
-		{
-			if (Paths[i][j]->m_GetX() == 0 || Paths[i][j]->m_GetY() == 0 || Paths[i][j]->m_GetX() == m_Size - 1 || Paths[i][j]->m_GetY() == m_Size - 1)
-			{
-				IsConnectedToSides = true;
-				break;
-			}
-		}
-		if (IsConnectedToSides)
-		{
-			TSet.push_back(Paths[i]);
-		}
-	}
-	Paths.clear();
-	Paths = TSet;
-
-	State PrevState;
-	HexNode* FirstNode;
-	HexNode* SecondNode;
-	if (HumanPlayer == State::RED)
-	{
-		FirstNode = TopNode;
-		SecondNode = BottomNode;
-		PrevState = State::RED;
-	}
-	else
-	{
-		FirstNode = LeftNode;
-		SecondNode = RightNode;
-		PrevState = State::BLUE;
-	}
-
-	FirstNode->m_SetState(State::NONE);
-	SecondNode->m_SetState(State::NONE);
-
-	for (int x = 0; x < m_Size; ++x)
-	{
-		for (int y = 0; y < m_Size; ++y)
-		{
-			if (m_Grid[x][y].m_GetState() == HumanPlayer && OccursInSets(&m_Grid[x][y], Paths) == false)
-			{
-				int FDistance = FindPath(&m_Grid[x][y], FirstNode).size();
-				int SDistance = FindPath(&m_Grid[x][y], SecondNode).size();
-
-				if (FDistance < MinDistanceToBorder)
-				{
-					TPair.first = x;
-					TPair.second = y;
-					MinDistanceToBorder = FDistance;
-				}
-				if (SDistance < MinDistanceToBorder)
-				{
-					TPair.first = x;
-					TPair.second = y;
-					MinDistanceToBorder = SDistance;
-				}
-			}
-		}
-	}
-
-	FirstNode->m_SetState(PrevState);
-	SecondNode->m_SetState(PrevState);
-
-	HexNode* FoundPoint = &(*this)(TPair.first, TPair.second);
-
-	FirstNode->m_SetState(State::NONE);
-	SecondNode->m_SetState(State::NONE);
-
-	vector<HexNode*> PathA = FindPath(FoundPoint, FirstNode);
-	PathA = GetFilteredPath(PathA, FoundPoint, FirstNode);
-	vector<HexNode*> PathB = FindPath(FoundPoint, SecondNode);
-	PathB = GetFilteredPath(PathB, FoundPoint, SecondNode);
-
-	FirstNode->m_SetState(PrevState);
-	SecondNode->m_SetState(PrevState);
-
-	HexNode* TargetNode = PathA.size() > PathB.size() ? SecondNode : FirstNode;
-	vector<HexNode*> Path = PathA.size() > PathB.size() ? PathB : PathA;
-
-	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
-	
-	vector<HexNode*> NodeSet;
-	for (int i = 0; i < Path.size(); ++i)
-	{
-		for (int j = 0; j < Path[i]->m_Neighbours.size(); ++j)
-		{
-			HexNode* NghBor = Path[i]->m_Neighbours[j];
-
-			if (std::find(NodeSet.begin(), NodeSet.end(), NghBor) == NodeSet.end() && NghBor != LeftNode && NghBor != RightNode && NghBor != TopNode && NghBor != BottomNode && NghBor != FoundPoint && NghBor != TargetNode && NghBor->m_GetState() == State::NONE)
-			{
-				NodeSet.push_back(NghBor);
-			}
-		}
-	}
-
-	int NewLength = 99999;
-	int NodeIndex = -1;
-
-	for (int i = 0; i < NodeSet.size(); ++i)
-	{
-			//Place node, recalculate path length.
-			State OriginalState = NodeSet[i]->m_GetState();
-			NodeSet[i]->m_SetState(OppositeState);
-
-			vector<HexNode*> NewPath = FindPath(FoundPoint, TargetNode);
-			NewPath = GetFilteredPath(NewPath, FoundPoint, TargetNode);
-
-			if (NewPath.size() < NewLength)
-			{
-				NewLength = NewPath.size();
-				NodeIndex = i;
-			}
-			NodeSet[i]->m_SetState(OriginalState);
-	}
-	*/
-	/*
-	vector<HexNode*> BestPotentialPath;
-	State PrevState;
-	HexNode* FirstNode;
-	HexNode* SecondNode;
-	if (HumanPlayer == State::RED)
-	{
-		FirstNode = TopNode;
-		SecondNode = BottomNode;
-		PrevState = State::RED;
-	}
-	else
-	{
-		FirstNode = LeftNode;
-		SecondNode = RightNode;
-		PrevState = State::BLUE;
-	}
-	BestPotentialPath = FindBestPotentialPath(FirstNode,SecondNode);
-	BestPotentialPath = GetFilteredPath(BestPotentialPath, FirstNode,SecondNode);
-	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
-	vector<HexNode*> NodeSet = BestPotentialPath;
-	
-	for (int i = 0; i < BestPotentialPath.size(); ++i)
-	{
-		for (int j = 0; j < BestPotentialPath[i]->m_Neighbours.size(); ++j)
-		{
-			HexNode* NghBor = BestPotentialPath[i]->m_Neighbours[j];
-
-			if (std::find(NodeSet.begin(), NodeSet.end(), NghBor) == NodeSet.end() && NghBor != LeftNode && NghBor != RightNode && NghBor != TopNode && NghBor != BottomNode  && NghBor->m_GetState() == State::NONE)
-			{
-				NodeSet.push_back(NghBor);
-			}
-		}
-	}
-
-	int NewLength = 99999;
-	int NodeIndex = -1;
-
-	for (int i = 0; i < NodeSet.size(); ++i)
-	{
-		if (NodeSet[i]->m_GetState() != State::NONE)
-			continue;
-		//Place node, recalculate path length.
-		State OriginalState = NodeSet[i]->m_GetState();
-		NodeSet[i]->m_SetState(OppositeState);
-
-		vector<HexNode*> NewPath = FindPath(FirstNode, SecondNode);
-		FirstNode->m_SetState(PrevState);
-		SecondNode->m_SetState(PrevState);
-		NewPath = GetFilteredPath(NewPath, FirstNode, SecondNode);
-
-		if (NewPath.size() < NewLength)
-		{
-			NewLength = NewPath.size();
-			NodeIndex = i;
-		}
-		NodeSet[i]->m_SetState(OriginalState);
-	}
-
-	HexNode* Final = NodeSet[NodeIndex];
-
-	return Move{ Final->m_GetX(), Final->m_GetY(), Final->m_GetState() };
-	*/
-	
 	HexNode* FirstNode;
 	HexNode* SecondNode;
 	if (HumanPlayer == State::RED)
@@ -475,7 +270,7 @@ auto HexGrid::ComputeBestMove() -> Move
 			}
 
 			if ((int)NewPotentialPath.size() > NewLength)
-			{
+			{				
 				NewLength = NewPotentialPath.size();
 				NodeIndex = i;
 			}
@@ -542,7 +337,7 @@ auto HexGrid::OccursInSets(HexNode* Node, vector<vector<HexNode*>>& Set) -> bool
 	return false;
 }
 
-vector<HexNode*> HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * StartNode, HexNode * EndNode)
+auto HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * StartNode, HexNode * EndNode) -> vector<HexNode*>
 {
 	vector<HexNode*> FPath;
 	for (int i = 0; i < Path.size(); ++i)
@@ -553,6 +348,72 @@ vector<HexNode*> HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * Star
 		}
 	}
 	return FPath;
+}
+
+auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
+{
+	int length = GetWindowTextLength(ViewList) + 1;
+	std::unique_ptr<WCHAR> TextBuffer(new WCHAR[length]);
+	GetWindowText(ViewList, &(*TextBuffer), length);
+	wstring origText = wstring(&*TextBuffer);
+
+	HDC dc = GetDC(hwnd);
+	if (m_Grid[move.x][move.y].m_GetState() != State::NONE)
+		return;
+	if (HumanPlayer != State::NONE)
+	{
+		if (HumanPlayer == State::BLUE)
+		{
+			PlayedMoves.push_back(Move{ move.x,move.y, State::BLUE });
+			m_Grid[move.x][move.y].m_SetState(State::BLUE);
+			FillHexBlue(dc, *g_hexGrid, move.x, move.y);
+			origText += L"Blue placed a node on .... \r\n";
+			SetWindowText(ViewList, origText.c_str());
+		}
+		else
+		{
+			PlayedMoves.push_back(Move{ move.x,move.y, State::RED });
+			m_Grid[move.x][move.y].m_SetState(State::RED);
+			FillHexRed(dc, *g_hexGrid, move.x, move.y);
+			origText += L"Red placed a node on .... \r\n";
+			SetWindowText(ViewList, origText.c_str());
+		}
+		if (g_hexGrid->GetVictorious() != State::NONE)
+		{
+			wstring t;
+			if (g_hexGrid->GetVictorious() == State::RED)
+				t = L"Red";
+			else
+				t = L"Blue";
+
+			MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
+			return;
+		}
+		Move m = g_hexGrid->ComputeBestMove();
+		State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
+		(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
+		if (OppositeState == State::RED)
+			origText += L"Computer placed a red node on .... \r\n";
+		else
+			origText += L"Computer placed a blue node on .... \r\n";
+		PlayedMoves.push_back(Move{ move.x,move.y, OppositeState });
+		SetWindowText(ViewList, origText.c_str());
+	}
+	else
+	{
+		//MANUAL
+	}
+	UpdateHexes(dc, *g_hexGrid);
+	if (g_hexGrid->GetVictorious() != State::NONE)
+	{
+		wstring t;
+		if (g_hexGrid->GetVictorious() == State::RED)
+			t = L"Red";
+		else
+			t = L"Blue";
+
+		MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
+	}
 }
 
 auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
@@ -609,7 +470,7 @@ auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vec
 			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
 				continue;
 
-			int weight = NghBor->m_GetState() == StartState ? 0 : 3;
+			int weight = NghBor->m_GetState() == StartState ? 0 : 1;
 			int Distance = GetDistance(CurrentLocation, NghBor);
 			if (CurrentLocation == StartNode || NghBor == EndNode)
 			{
