@@ -2,6 +2,7 @@
 #include <memory>
 #include <wchar.h>
 #include <chrono>
+#include "resource.h"
 #pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
 
 /*
@@ -14,7 +15,7 @@ Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel
 */
 
 
-HWND CommandField, AcceptButton, ViewList, CommandTextLabel;
+HWND CommandField, AcceptButton, ViewList, CommandTextLabel,PathButton;
 vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
 int LeftOffset = 60;
@@ -45,6 +46,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Commando: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
 			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accepteer", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
+			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Pad", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)2, NULL, NULL);
 			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welkom bij H3X: The Game! \n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
@@ -93,7 +95,9 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					HDC hdc = GetDC(hwnd);
 					UpdateHexes(hdc,*g_hexGrid);
 					auto t1 = std::chrono::high_resolution_clock::now();
-					oldPath = g_hexGrid->FindBestPotentialPath(g_hexGrid->LeftNode, g_hexGrid->RightNode);
+					//g_hexGrid->LeftNode->m_SetState(State::NONE);
+					//g_hexGrid->RightNode->m_SetState(State::NONE);
+					oldPath = g_hexGrid->FindPath(g_hexGrid->LeftNode, &(*g_hexGrid)(10,10));
 					auto t2 = std::chrono::high_resolution_clock::now();
 					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
@@ -108,19 +112,62 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					}
 					*/
 					
-					
-					
 					if (g_hexGrid != nullptr)
 					{
+						if (g_hexGrid->GetVictorious() != State::NONE)
+						{
+							wstring t;
+							if (g_hexGrid->GetVictorious() == State::RED)
+								t = L"Rood";
+							else
+								t = L"Blauw";
+
+							MessageBox(NULL, t.c_str(), L"En de winnaar is:", MB_OK);
+							break;
+						}
 						Move m = g_hexGrid->ComputeBestMove();
-						MessageBox(NULL, std::to_wstring(m.x).c_str(),std::to_wstring( m.y).c_str(), MB_OK);
-						(*g_hexGrid)(m.x, m.y).m_SetState(State::RED);
+						State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
+						(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
 						HDC dc = GetDC(hwnd);
 						UpdateHexes(dc, *g_hexGrid);
+						if (g_hexGrid->GetVictorious() != State::NONE)
+						{
+							wstring t;
+							if (g_hexGrid->GetVictorious() == State::RED)
+								t = L"Rood";
+							else
+								t = L"Blauw";
+
+							MessageBox(NULL, t.c_str(), L"En de winnaar is:", MB_OK);
+						}
 					}
 					
 				}
 				break;
+			case 2:
+			{
+				if (g_hexGrid != nullptr)
+				{
+					HDC hdc = GetDC(hwnd);
+					if (g_hexGrid->IsVisible)
+					{
+						//Turn off
+						UpdateHexes(hdc, *g_hexGrid);
+					}
+					else
+					{
+						//Turn on
+						for (auto it = g_hexGrid->PotPath.begin(); it != g_hexGrid->PotPath.end(); it++)
+						{
+							FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
+						}
+					}
+					g_hexGrid->IsVisible = !g_hexGrid->IsVisible;
+				}
+			}
+			break;
+
+
 			}
 			break;
 		case WM_LBUTTONDOWN:
@@ -140,11 +187,6 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					cNode->m_SetState(State::RED);
 					HDC hdc = GetDC(hwnd);
 					FillHexRed(hdc, *g_hexGrid, cNode->m_GetX(), cNode->m_GetY());
-					/*
-					for (int i = 0; i < cNode->m_Neighbours.size(); ++i)
-					{
-						FillHexColor(hdc, *g_hexGrid, cNode->m_Neighbours[i]->m_GetX(), cNode->m_Neighbours[i]->m_GetY(), RGB(0, 255, 0));
-					}*/
 				}
 			}
 		}
@@ -184,12 +226,12 @@ auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = WindowClassName.c_str();
-	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
 	if (!RegisterClassEx(&wc))
 	{
@@ -328,11 +370,6 @@ auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 			
 			Polygon(hdc, &*pArray, 6);
 		}
-		/*
-
-		int hexMiddleX = xGrid*HexGrootte + LeftOffset + yGrid*(HexGrootte / 2);
-		int hexMiddleY = yGrid*HexGrootte + TopOffset;
-		*/
 	}
 	DeleteObject(NoneBrush);
 	int size = hexGrid.get_Size();

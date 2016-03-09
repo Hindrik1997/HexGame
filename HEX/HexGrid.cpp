@@ -142,38 +142,37 @@ auto HexGrid::CalculateCubicalCoordinates() -> void
 
 auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 {
+
 	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
 	{
 		//No path possible
 		return vector<HexNode*>();
 	}
-
-
-	vector<HexNode*> OpenSet;
-	vector<HexNode*> ClosedSet;
 	int size = (StartNode)->m_GetHexGrid()->get_Size();
+	vector<HexNode*> OpenSet;
+	vector<HexNode*> ClosedSet; //vector blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
 	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
-	
 	for (int i = 0; i < 4; ++i)
 	{
 		(&*mappedData)[size * size + i].isSpecial = true;
-	} 
-
+	}
 	OpenSet.push_back(StartNode);
 	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
 	NodeAstarData start;
 	NodeAstarData end;
 	(&*mappedData)[StartNode->m_GetID()] = start;
 	(&*mappedData)[EndNode->m_GetID()] = end;
+
 	while (OpenSet.size() > 0)
 	{
 		HexNode* CurrentLocation = OpenSet.front();
 		//Gezien de beperkte grootte van de OpenSet, is het voor mij sneller om de hele set te doorzoeken dan om een binary heap te implementen en steeds te sorteren. Daar waar hij met heap ~44 microseconden neemt worst case, en ~25 microseconden zonder op mijn eigen pc.
-		for (auto it = OpenSet.begin(); it != OpenSet.end(); it++)
+		for (int i = 0; i < OpenSet.size(); ++i)
 		{
-			if ((&*mappedData)[(*it)->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost())
+			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost())
 			{
-				CurrentLocation = (*it);
+				CurrentLocation = OpenSet[i];
 			}
 		}
 		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
@@ -190,7 +189,7 @@ auto HexGrid::FindPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 		{
 			HexNode* NghBor = *it;
 
-			if ( /*  If Not traversable */  (NghBor->m_GetState() != State::NONE && NghBor->m_GetState() != CurrentLocation->m_GetState()) /* Of in Closed Set */ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+			if ( /*  If Not traversable */  (NghBor->m_GetState() != State::NONE && NghBor->m_GetState() != CurrentLocation->m_GetState()) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
 				continue;
 
 			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + GetDistance(CurrentLocation, NghBor);
@@ -372,6 +371,7 @@ auto HexGrid::ComputeBestMove() -> Move
 			NodeSet[i]->m_SetState(OriginalState);
 	}
 	*/
+	/*
 	vector<HexNode*> BestPotentialPath;
 	State PrevState;
 	HexNode* FirstNode;
@@ -433,6 +433,56 @@ auto HexGrid::ComputeBestMove() -> Move
 	HexNode* Final = NodeSet[NodeIndex];
 
 	return Move{ Final->m_GetX(), Final->m_GetY(), Final->m_GetState() };
+	*/
+	
+	HexNode* FirstNode;
+	HexNode* SecondNode;
+	if (HumanPlayer == State::RED)
+	{
+		FirstNode = TopNode;
+		SecondNode = BottomNode;
+	}
+	else
+	{
+		FirstNode = LeftNode;
+		SecondNode = RightNode;
+	}
+	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
+
+		vector<HexNode*> BestPotentialPath;
+		BestPotentialPath = FindBestPotentialPath(FirstNode, SecondNode);
+		PotPath = BestPotentialPath;
+
+		int NewLength = -1;
+		int NodeIndex = -1;
+		
+		
+		for (int i = 0; i < BestPotentialPath.size(); i++)
+		{
+			if (BestPotentialPath[i]->m_GetState() != State::NONE)
+				continue;
+			//Remember state
+			State PrevState = BestPotentialPath[i]->m_GetState();
+			BestPotentialPath[i]->m_SetState(OppositeState);
+
+			vector<HexNode*> NewPotentialPath = FindBestPotentialPath(FirstNode,SecondNode);
+			if ((int)NewPotentialPath.size() == 0)
+			{
+				BestPotentialPath[i]->m_SetState(PrevState);
+				NewLength = NewPotentialPath.size();
+				NodeIndex = i;
+				break;
+			}
+
+			if ((int)NewPotentialPath.size() > NewLength)
+			{
+				NewLength = NewPotentialPath.size();
+				NodeIndex = i;
+			}
+			BestPotentialPath[i]->m_SetState(PrevState);
+		}
+
+		return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
 }
 
 auto HexGrid::GetVictorious() -> State
@@ -507,38 +557,39 @@ vector<HexNode*> HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * Star
 
 auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
 {
+	State StartState = StartNode->m_GetState();
+	State OppositeState = StartState == State::RED ? State::BLUE : State::RED;
+
 	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
 	{
 		//No path possible
 		return vector<HexNode*>();
 	}
-	
-	State StartState = StartNode->m_GetState();
-	State OppositeState = StartState == State::RED ? State::BLUE : State::RED;
-	vector<HexNode*> OpenSet;
-	vector<HexNode*> ClosedSet;
 	int size = (StartNode)->m_GetHexGrid()->get_Size();
-	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]);
-
+	vector<HexNode*> OpenSet;
+	vector<HexNode*> ClosedSet; //vector blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
 	for (int i = 0; i < 4; ++i)
 	{
 		(&*mappedData)[size * size + i].isSpecial = true;
 	}
-
 	OpenSet.push_back(StartNode);
 	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
 	NodeAstarData start;
 	NodeAstarData end;
 	(&*mappedData)[StartNode->m_GetID()] = start;
 	(&*mappedData)[EndNode->m_GetID()] = end;
+
 	while (OpenSet.size() > 0)
 	{
 		HexNode* CurrentLocation = OpenSet.front();
-		for (auto it = OpenSet.begin(); it != OpenSet.end(); it++)
+		//Gezien de beperkte grootte van de OpenSet, is het voor mij sneller om de hele set te doorzoeken dan om een binary heap te implementen en steeds te sorteren. Daar waar hij met heap ~44 microseconden neemt worst case, en ~25 microseconden zonder op mijn eigen pc.
+		for (int i = 0; i < OpenSet.size(); ++i)
 		{
-			if ( ( (*it)->m_GetState() == StartState ? (&*mappedData)[(*it)->m_GetID()].m_fCost() : (&*mappedData)[(*it)->m_GetID()].m_fCost() * 50) < ( CurrentLocation->m_GetState() == StartState ? (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost() : (&*mappedData)[CurrentLocation->m_GetID() + 4].m_fCost() * 50) )
+			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost())
 			{
-				CurrentLocation = (*it);
+				CurrentLocation = OpenSet[i];
 			}
 		}
 		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
@@ -555,14 +606,32 @@ auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vec
 		{
 			HexNode* NghBor = *it;
 
-			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* Of in Closed Set */ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
 				continue;
 
-			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + GetDistance(CurrentLocation, NghBor);
-			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+			int weight = NghBor->m_GetState() == StartState ? 0 : 3;
+			int Distance = GetDistance(CurrentLocation, NghBor);
+			if (CurrentLocation == StartNode || NghBor == EndNode)
 			{
-				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
-				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, EndNode);
+				Distance = 0;
+			}
+
+			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + Distance + weight;
+			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+			{	
+
+				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;			
+				HexNode* SpecEndNode;
+				if (StartState == State::RED)
+				{
+					SpecEndNode = &m_Grid[CurrentLocation->m_GetX()][m_Size-1];
+				}
+				else
+				{
+					SpecEndNode = &m_Grid[m_Size-1][CurrentLocation->m_GetY()];
+				}
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor,SpecEndNode);
+				
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 				{

@@ -45,6 +45,8 @@ public:
 	HexNode* BottomNode;
 	HexNode* LeftNode;
 	HexNode* RightNode;
+	vector<HexNode*> PotPath;
+	bool IsVisible = false;
 };
 
 //Const versie van de () operator voor const Hexgrids
