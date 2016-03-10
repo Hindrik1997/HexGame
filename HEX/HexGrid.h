@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <tuple>
 #include <Windows.h>
 
 using std::vector;
@@ -34,14 +35,18 @@ public:
 	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	vector<HexNode*> FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	vector<HexNode*> FindBestPotentialNonWeightedPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
-	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
-	static void GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet, const vector<HexNode*>& TotalSet);
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
-	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
+
 	static vector<HexNode*> GetFilteredPath(vector<HexNode*>& Path, HexNode* StartNode, HexNode* EndNode);
-	void PlayMove(Move move, HWND hwnd);
-	Move ComputeBestMove();
+	static void GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet, const vector<HexNode*>& TotalSet);
+
+	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
 	State GetVictorious();
+	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
+
+	void PlayMove(Move move, HWND hwnd);
+	std::tuple<Move, vector<HexNode*>, bool> ComputeBestMove();
+	Move EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool>);
 public:
 	vector<Move> PlayedMoves;
 	State HumanPlayer = State::BLUE;
@@ -55,8 +60,7 @@ public:
 };
 
 //Const versie van de () operator voor const Hexgrids
-inline auto HexGrid::operator()(unsigned nRow, unsigned nCol) const -> const HexNode&
-{
+inline auto HexGrid::operator()(unsigned nRow, unsigned nCol) const -> const HexNode&{
 	if (nRow >= 0 && nRow < get_Size() && nCol >= 0 && nCol < get_Size())
 	{
 		return m_Grid[nRow][nCol];
@@ -81,7 +85,6 @@ inline auto HexGrid::get_Size() const -> unsigned int
 {
 	return m_Size;
 }
-
 
 inline auto HexGrid::GetDistance(HexNode* FirstNode, HexNode* SecondNode) -> int
 {

@@ -24,7 +24,7 @@ bool CallInitUpdate = false;
 auto CheckMessage() -> bool
 {
 	MSG Msg;
-	if (PeekMessage(&Msg, NULL, NULL, NULL, PM_REMOVE))
+	if (GetMessage(&Msg, NULL, NULL, NULL))
 	{
 		if (Msg.message == WM_QUIT)
 			return false;

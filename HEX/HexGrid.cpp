@@ -228,7 +228,7 @@ auto HexGrid::RetracePath(HexNode * Start, HexNode * End, unique_ptr<NodeAstarDa
 	return path;
 }
 
-auto HexGrid::ComputeBestMove() -> Move
+auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 {
 	HexNode* FirstNode;
 	HexNode* SecondNode;
@@ -284,11 +284,11 @@ auto HexGrid::ComputeBestMove() -> Move
 			opponLast = PlayedMoves[PlayedMoves.size() - 1];
 
 			if (BestPotentialPath[NodeIndex]->m_GetX() == opponLast.x && BestPotentialPath[NodeIndex]->m_GetY() == opponLast.y)
-				return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+				return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState },BestPotentialPath,true);
 		}
 		else
 		{
-			return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+			return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath,true);
 		}
 
 		Move CurrentBestMove = Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
@@ -331,11 +331,11 @@ auto HexGrid::ComputeBestMove() -> Move
 					}
 					SecondPath[i]->m_SetState(PrevState);
 				}
-				return Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+				return std::make_tuple(Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState }, SecondPath,false);
 			}
 			else
 			{
-				return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+				return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath,true);
 			}
 		}
 		else
@@ -374,11 +374,11 @@ auto HexGrid::ComputeBestMove() -> Move
 						}
 						SecondPath[i]->m_SetState(PrevState);
 					}
-					return Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+					return std::make_tuple(Move{ SecondPath[SecondNodeIndex]->m_GetX(),SecondPath[SecondNodeIndex]->m_GetY(), OppositeState },SecondPath,false);
 				}
 				else
 				{
-					return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+					return std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath,true);
 				}
 			}
 			else
@@ -420,19 +420,15 @@ auto HexGrid::ComputeBestMove() -> Move
 							}
 							TSecondPath[i]->m_SetState(PrevState);
 						}
-						return Move{ TSecondPath[SecondNodeIndex]->m_GetX(),TSecondPath[SecondNodeIndex]->m_GetY(), OppositeState };
+						return std::make_tuple(Move{ TSecondPath[SecondNodeIndex]->m_GetX(),TSecondPath[SecondNodeIndex]->m_GetY(), OppositeState }, TSecondPath,false);
 					}
 					else
 					{
-						return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+						return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath,true);
 					}
-
-
 				}
 				else
 				{
-					//Search for first node
-					//Search for second node
 					if (TFirstPath.size() <= NewLength)
 					{
 						//Play this one instead
@@ -463,15 +459,154 @@ auto HexGrid::ComputeBestMove() -> Move
 							}
 							TFirstPath[i]->m_SetState(PrevState);
 						}
-						return Move{ TFirstPath[SecondNodeIndex]->m_GetX(),TFirstPath[SecondNodeIndex]->m_GetY(), OppositeState };
+						return std::make_tuple(Move{ TFirstPath[SecondNodeIndex]->m_GetX(),TFirstPath[SecondNodeIndex]->m_GetY(), OppositeState },TFirstPath,false);
 					}
 					else
 					{
-						return Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState };
+						return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath,true);
 					}
 				}
 			}
 		}
+}
+
+auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> moveData) -> Move
+{
+	
+	HexNode* FirstNode;
+	HexNode* SecondNode;
+	if (HumanPlayer == State::RED)
+	{
+		FirstNode = TopNode;
+		SecondNode = BottomNode;
+	}
+	else
+	{
+		FirstNode = LeftNode;
+		SecondNode = RightNode;
+	}
+	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
+	//Only evaluated two axis, so i still have to do the third one
+
+	if (PlayedMoves.size() < 3)
+		return std::get<0>(moveData);
+
+	Move PrevMove = PlayedMoves[PlayedMoves.size() - 1];
+	Move PrePrevMove = PlayedMoves[PlayedMoves.size() - 3];
+
+	bool IsOriginal = std::get<2>(moveData);
+
+	if (m_Grid[PrevMove.x][PrevMove.y].m_GetCubicalZ() == m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ() && abs(PrevMove.x - PrePrevMove.x) == 1 && abs(PrevMove.y - PrePrevMove.y) == 1)
+	{
+		vector<HexNode*> LeftBottom;
+		vector<HexNode*> RightTop;
+		HexNode* LowestNode = PrePrevMove.x < PrevMove.x ? &m_Grid[PrePrevMove.x][PrePrevMove.y] : &m_Grid[PrevMove.x][PrevMove.y];
+		HexNode* HighestNode = PrePrevMove.x > PrevMove.x ? &m_Grid[PrePrevMove.x][PrePrevMove.y] : &m_Grid[PrevMove.x][PrevMove.y];
+		//Are on same axis, so calculate if straight path on z axis reaches edges, if so it is potentially a VERY strong move
+		for (int x = 0; x < m_Size; ++x)
+		{
+			for (int y = 0; y < m_Size; ++y)
+			{
+				if (m_Grid[x][y].m_GetCubicalZ() == LowestNode->m_GetCubicalZ())
+				{
+					if (x == PrevMove.x && y == PrevMove.y || x == PrePrevMove.x && y == PrePrevMove.y)
+						continue;
+					//actual x is smaller on left down side of z axis.
+					if (LowestNode->m_GetX() > m_Grid[x][y].m_GetX())
+					{
+						LeftBottom.push_back(&m_Grid[x][y]);
+					}
+					else
+					{
+						RightTop.push_back(&m_Grid[x][y]);
+					}
+				}
+			}
+		}
+
+		bool RightTClear = true;
+		bool LeftBClear = true;
+		for (auto& node : LeftBottom) 
+		{
+			if(node->m_GetState() != State::NONE)
+			{
+				LeftBClear = false;
+				break;
+			}
+		}
+		for (auto& node : RightTop)
+		{
+			if (node->m_GetState() != State::NONE)
+			{
+				RightTClear = false;
+				break;
+			}
+		}
+
+		if (HumanPlayer == State::BLUE)
+		{
+			if (LeftBClear || RightTClear)
+			{
+				if (FindPath(FirstNode, LowestNode).size() != 0)
+				{
+					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
+					for (auto& node : RightTop)
+					{
+						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
+						{
+							//this move wins, 
+							return Move{HighestNode->m_GetX()+1, HighestNode->m_GetY()-1, OppositeState};
+						}
+					}
+				}
+				else
+				{
+					//Not connected to lower one
+					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
+					for (auto& node : LeftBottom)
+					{
+						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
+						{
+							//this move wins, 
+							return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			if (LeftBClear || RightTClear)
+			{
+				if (FindPath(SecondNode, LowestNode).size() != 0)
+				{
+					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
+					for (auto& node : RightTop)
+					{
+						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
+						{
+							//this move wins, 
+							return Move{ HighestNode->m_GetX() + 1, HighestNode->m_GetY() - 1, OppositeState };
+						}
+					}
+				}
+				else
+				{
+					//Not connected to lower one
+					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
+					for (auto& node : LeftBottom)
+					{
+						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
+						{
+							//this move wins, 
+							return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
+						}
+					}
+				}
+			}
+		}
+	}
+	return std::get<0>(moveData);
 }
 
 auto HexGrid::GetVictorious() -> State
@@ -583,7 +718,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
 			return;
 		}
-		Move m = g_hexGrid->ComputeBestMove();
+		Move m = g_hexGrid->EvaluateComputedMove(g_hexGrid->ComputeBestMove());
 		State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
 		(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
 		if (OppositeState == State::RED)
