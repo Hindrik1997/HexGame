@@ -299,7 +299,7 @@ auto HexGrid::ComputeBestMove() -> Move
 		bool IsConnectedToSecond = FindPath(&m_Grid[opponLast.x][opponLast.y], SecondNode).size() == 0 ? false : true;
 		if (IsConnectedToFirst && !IsConnectedToSecond)
 		{
-			vector<HexNode*> SecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+			vector<HexNode*> SecondPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
 			//Connected aan first, niet aan second
 			if (SecondPath.size() <= NewLength)
 			{
@@ -315,7 +315,7 @@ auto HexGrid::ComputeBestMove() -> Move
 					State PrevState = SecondPath[i]->m_GetState();
 					SecondPath[i]->m_SetState(OppositeState);
 
-					vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+					vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
 					if ((int)NewPotentialPath.size() == 0)
 					{
 						SecondPath[i]->m_SetState(PrevState);
@@ -342,7 +342,7 @@ auto HexGrid::ComputeBestMove() -> Move
 		{
 			if (!IsConnectedToFirst && IsConnectedToSecond)
 			{
-				vector<HexNode*> SecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+				vector<HexNode*> SecondPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
 				//Connected aan first, niet aan second
 				if (SecondPath.size() <= NewLength)
 				{
@@ -358,7 +358,7 @@ auto HexGrid::ComputeBestMove() -> Move
 						State PrevState = SecondPath[i]->m_GetState();
 						SecondPath[i]->m_SetState(OppositeState);
 
-						vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+						vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
 						if ((int)NewPotentialPath.size() == 0)
 						{
 							SecondPath[i]->m_SetState(PrevState);
@@ -384,8 +384,8 @@ auto HexGrid::ComputeBestMove() -> Move
 			else
 			{
 
-				vector<HexNode*> TFirstPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
-				vector<HexNode*> TSecondPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+				vector<HexNode*> TFirstPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+				vector<HexNode*> TSecondPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
 
 				if (TFirstPath.size() > TSecondPath.size())
 				{
@@ -404,7 +404,7 @@ auto HexGrid::ComputeBestMove() -> Move
 							State PrevState = TSecondPath[i]->m_GetState();
 							TSecondPath[i]->m_SetState(OppositeState);
 
-							vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
+							vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
 							if ((int)NewPotentialPath.size() == 0)
 							{
 								TSecondPath[i]->m_SetState(PrevState);
@@ -447,7 +447,7 @@ auto HexGrid::ComputeBestMove() -> Move
 							State PrevState = TFirstPath[i]->m_GetState();
 							TFirstPath[i]->m_SetState(OppositeState);
 
-							vector<HexNode*> NewPotentialPath = FindBestPotentialPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
+							vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
 							if ((int)NewPotentialPath.size() == 0)
 							{
 								TFirstPath[i]->m_SetState(PrevState);
@@ -687,6 +687,94 @@ auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vec
 				}
 				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor,SpecEndNode);
 				
+				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
+				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+				{
+					OpenSet.push_back(NghBor);
+					(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet = true;
+				}
+			}
+		}
+	}
+	return vector<HexNode*>();
+}
+
+auto HexGrid::FindBestPotentialNonWeightedPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
+{
+	State StartState = StartNode->m_GetState();
+	State OppositeState = StartState == State::RED ? State::BLUE : State::RED;
+
+	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
+	{
+		//No path possible
+		return vector<HexNode*>();
+	}
+	int size = (StartNode)->m_GetHexGrid()->get_Size();
+	vector<HexNode*> OpenSet;
+	vector<HexNode*> ClosedSet; //vector blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+	for (int i = 0; i < 4; ++i)
+	{
+		(&*mappedData)[size * size + i].isSpecial = true;
+	}
+	OpenSet.push_back(StartNode);
+	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
+	NodeAstarData start;
+	NodeAstarData end;
+	(&*mappedData)[StartNode->m_GetID()] = start;
+	(&*mappedData)[EndNode->m_GetID()] = end;
+
+	while (OpenSet.size() > 0)
+	{
+		HexNode* CurrentLocation = OpenSet.front();
+		//Gezien de beperkte grootte van de OpenSet, is het voor mij sneller om de hele set te doorzoeken dan om een binary heap te implementen en steeds te sorteren. Daar waar hij met heap ~44 microseconden neemt worst case, en ~25 microseconden zonder op mijn eigen pc.
+		for (int i = 0; i < OpenSet.size(); ++i)
+		{
+			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost())
+			{
+				CurrentLocation = OpenSet[i];
+			}
+		}
+		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInOpenSet = false;
+		ClosedSet.push_back(CurrentLocation);
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInClosedSet = true;
+
+		if (CurrentLocation == EndNode)
+		{
+			return RetracePath(StartNode, EndNode, mappedData);
+		}
+
+		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
+		{
+			HexNode* NghBor = *it;
+
+			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+				continue;
+
+			int Distance = GetDistance(CurrentLocation, NghBor);
+			if (CurrentLocation == StartNode || NghBor == EndNode)
+			{
+				Distance = 0;
+			}
+
+			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + Distance;
+			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+			{
+
+				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
+				HexNode* SpecEndNode;
+				if (StartState == State::RED)
+				{
+					SpecEndNode = &m_Grid[CurrentLocation->m_GetX()][m_Size - 1];
+				}
+				else
+				{
+					SpecEndNode = &m_Grid[m_Size - 1][CurrentLocation->m_GetY()];
+				}
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, SpecEndNode);
+
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 				{
