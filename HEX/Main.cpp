@@ -23,11 +23,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	g_hexGrid = &h;
 	DrawHexes(hdc,*g_hexGrid);
 	CallInitUpdate = true;
+	ReleaseDC(hwnd, hdc);
 	//Main loop
 	do
 	{
 	} 
 	while (CheckMessage() != false);
-	ReleaseDC(hwnd,hdc);
 	return 0;
 }

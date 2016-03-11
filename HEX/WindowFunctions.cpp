@@ -24,7 +24,7 @@ bool CallInitUpdate = false;
 auto CheckMessage() -> bool
 {
 	MSG Msg;
-	if (GetMessage(&Msg, NULL, NULL, NULL))
+	if (PeekMessage(&Msg, NULL, NULL, NULL,PM_REMOVE))
 	{
 		if (Msg.message == WM_QUIT)
 			return false;
@@ -45,7 +45,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Command: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
 			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accept", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
-			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
+			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Undo", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
 			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by H3X: The Game! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
@@ -69,10 +69,10 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			return 0;
 		case WM_CLOSE:
 			DestroyWindow(hwnd);
-			break;
+			return 0;
 		case WM_DESTROY:
 			PostQuitMessage(0);
-			break;
+			return 0;
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
@@ -111,6 +111,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				break;
 			case 5:
 			{
+				/*
 				if (g_hexGrid != nullptr)
 				{
 					HDC hdc = GetDC(hwnd);
@@ -127,8 +128,15 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 							FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
 						}
 					}
+					ReleaseDC(hwnd,hdc);
 					g_hexGrid->IsVisible = !g_hexGrid->IsVisible;
-				}
+				}*/
+				if (g_hexGrid != nullptr)
+					g_hexGrid->UndoMove();
+				HDC dc = GetDC(hwnd);
+				UpdateHexes(dc, *g_hexGrid);
+				ReleaseDC(hwnd, dc);
+
 			}
 			break;
 			}
@@ -163,6 +171,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				UpdateHexes(dc, *g_hexGrid);
 				CallInitUpdate = false;
 			}
+			ReleaseDC(hwnd,dc);
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 		}
 	}

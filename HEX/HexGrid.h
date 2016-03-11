@@ -45,6 +45,7 @@ public:
 	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 
 	void PlayMove(Move move, HWND hwnd);
+	void UndoMove();
 	std::tuple<Move, vector<HexNode*>, bool> ComputeBestMove();
 	Move EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool>);
 public:

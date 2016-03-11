@@ -555,7 +555,8 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
 						{
 							//this move wins, 
-							return Move{HighestNode->m_GetX()+1, HighestNode->m_GetY()-1, OppositeState};
+							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
+							//return Move{HighestNode->m_GetX()+1, HighestNode->m_GetY()-1, OppositeState};
 						}
 					}
 				}
@@ -568,11 +569,11 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
 						{
 							//this move wins, 
-							return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
+							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
+							//return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
 						}
 					}
 				}
-			}
 		}
 		else
 		{
@@ -585,8 +586,9 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 					{
 						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
 						{
-							//this move wins, 
-							return Move{ HighestNode->m_GetX() + 1, HighestNode->m_GetY() - 1, OppositeState };
+							//this move wins,
+							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
+							//return Move{ HighestNode->m_GetX() + 1, HighestNode->m_GetY() - 1, OppositeState };
 						}
 					}
 				}
@@ -598,8 +600,9 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 					{
 						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
 						{
-							//this move wins, 
-							return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
+							//this move wins,
+							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
+							//return Move{ LowestNode->m_GetX() - 1, LowestNode->m_GetY() + 1, OppositeState };
 						}
 					}
 				}
@@ -689,6 +692,18 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 	HDC dc = GetDC(hwnd);
 	if (m_Grid[move.x][move.y].m_GetState() != State::NONE)
 		return;
+	if (g_hexGrid->GetVictorious() != State::NONE)
+	{
+		wstring t;
+		if (g_hexGrid->GetVictorious() == State::RED)
+			t = L"Red";
+		else
+			t = L"Blue";
+
+		MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
+		ReleaseDC(hwnd, dc);
+		return;
+	}
 	if (HumanPlayer != State::NONE)
 	{
 		if (HumanPlayer == State::BLUE)
@@ -696,7 +711,11 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			PlayedMoves.push_back(Move{ move.x,move.y, State::BLUE });
 			m_Grid[move.x][move.y].m_SetState(State::BLUE);
 			FillHexBlue(dc, *g_hexGrid, move.x, move.y);
-			origText += L"Blue placed a node on .... \r\n";
+			wstring first = L"Blue placed a node on ";
+			wstring second = std::to_wstring(move.x) + L" - " + std::to_wstring(move.y);
+			wstring third = L"\r\n";
+			wstring txt = first + second + third;
+			origText += txt.c_str();
 			SetWindowText(ViewList, origText.c_str());
 		}
 		else
@@ -704,7 +723,11 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			PlayedMoves.push_back(Move{ move.x,move.y, State::RED });
 			m_Grid[move.x][move.y].m_SetState(State::RED);
 			FillHexRed(dc, *g_hexGrid, move.x, move.y);
-			origText += L"Red placed a node on .... \r\n";
+			wstring first = L"Red placed a node on ";
+			wstring second = std::to_wstring(move.x) + L" - " + std::to_wstring(move.y);
+			wstring third = L"\r\n";
+			wstring txt = first + second + third;
+			origText += txt.c_str();
 			SetWindowText(ViewList, origText.c_str());
 		}
 		if (g_hexGrid->GetVictorious() != State::NONE)
@@ -716,16 +739,29 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 				t = L"Blue";
 
 			MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
+			ReleaseDC(hwnd,dc);
 			return;
 		}
 		Move m = g_hexGrid->EvaluateComputedMove(g_hexGrid->ComputeBestMove());
 		State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
 		(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
 		if (OppositeState == State::RED)
-			origText += L"Computer placed a red node on .... \r\n";
+		{
+			wstring first = L"Computer placed a red node on ";
+			wstring second = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y);
+			wstring third = L"\r\n";
+			wstring txt = first + second + third;
+			origText += txt.c_str();
+		}
 		else
-			origText += L"Computer placed a blue node on .... \r\n";
-		PlayedMoves.push_back(Move{ move.x,move.y, OppositeState });
+		{
+			wstring first = L"Computer placed a blue node on ";
+			wstring second = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y);
+			wstring third = L"\r\n";
+			wstring txt = first + second + third;
+			origText += txt.c_str();
+		}
+		PlayedMoves.push_back(Move{ m.x,m.y, OppositeState });
 		SetWindowText(ViewList, origText.c_str());
 	}
 	else
@@ -743,6 +779,50 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 
 		MessageBox(NULL, t.c_str(), L"And the winner is:", MB_OK);
 	}
+	ReleaseDC(hwnd, dc);
+}
+
+void HexGrid::UndoMove()
+{
+	int length = GetWindowTextLength(ViewList) + 1;
+	std::unique_ptr<WCHAR> TextBuffer(new WCHAR[length]);
+	GetWindowText(ViewList, &(*TextBuffer), length);
+	wstring origText = wstring(&*TextBuffer);
+
+	if (HumanPlayer == State::NONE && PlayedMoves.size() != 0)
+	{
+		Move m = PlayedMoves[PlayedMoves.size() - 1];
+		m_Grid[m.x][m.y].m_SetState(State::NONE);
+		PlayedMoves.pop_back();
+		wstring first = L"Undid move for ";
+		wstring second = m.Color == State::RED ? L"red " : L"blue ";
+		wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+		wstring txt = first + second + third;
+		origText += txt.c_str();
+	}
+	else
+	{
+		if (PlayedMoves.size() < 2)
+			return;
+		Move m = PlayedMoves[PlayedMoves.size() - 1];
+		m_Grid[m.x][m.y].m_SetState(State::NONE);
+		PlayedMoves.pop_back();
+		wstring first = L"Undid move for ";
+		wstring second = m.Color == State::RED ? L"red " : L"blue ";
+		wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+		wstring txt = first + second + third;
+		origText += txt.c_str();
+
+		Move m2 = PlayedMoves[PlayedMoves.size() - 1];
+		m_Grid[m2.x][m2.y].m_SetState(State::NONE);
+		PlayedMoves.pop_back();
+		wstring first2 = L"Undid move for ";
+		wstring second2 = m2.Color == State::RED ? L"red " : L"blue ";
+		wstring third2 = std::to_wstring(m2.x) + L" - " + std::to_wstring(m2.y) + L"\r\n";
+		wstring txt2 = first2 + second2 + third2;
+		origText += txt2.c_str();
+	}
+	SetWindowText(ViewList, origText.c_str());
 }
 
 auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vector<HexNode*>
