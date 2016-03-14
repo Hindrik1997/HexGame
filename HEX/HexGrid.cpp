@@ -487,13 +487,14 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 	}
 	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
 	
-	if (PlayedMoves.size() < 3)
+	if (PlayedMoves.size() < 5)
 		return std::get<0>(moveData);
 
 	Move PrevMove = PlayedMoves[PlayedMoves.size() - 1];
 	Move PrePrevMove = PlayedMoves[PlayedMoves.size() - 3];
+	Move PrePrePrevMove = PlayedMoves[PlayedMoves.size() - 5];
 
-	if (m_Grid[PrevMove.x][PrevMove.y].m_GetCubicalZ() == m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ())
+	if (m_Grid[PrevMove.x][PrevMove.y].m_GetCubicalZ() == m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ() && m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ() == m_Grid[PrePrePrevMove.x][PrePrePrevMove.y].m_GetCubicalZ())
 		goto EvaluateZAxis;
 
 	//check if connected so a single side
@@ -531,6 +532,7 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 		//Connected to first side only
 		if (HumanPlayer == State::BLUE)
 		{
+			//Connected to first side, place on second side! which is the RIGHT side here
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
 			for (int i = 0; i < (int)m_Size; ++i)
@@ -549,11 +551,12 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 		else
 		{
 			//For red this is the top
+			//Connected to first side, so search for second which is BOTTOM
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
 			for (int i = 0; i < (int)m_Size; ++i)
 			{
-				HexNode* CurrentlyObserving = &m_Grid[i][0];
+				HexNode* CurrentlyObserving = &m_Grid[i][(int)m_Size - 1];
 
 				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
 				{
@@ -565,12 +568,13 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			return Move{ ClosestNode->m_GetX(), ClosestNode->m_GetY(), OppositeState };
 		}
 	}
-	if (IsConnectedToSecondSide && !IsConnectedToSecondSide)
+	if (IsConnectedToSecondSide && !IsConnectedToFirstSide)
 	{
 		//Connected to second side only
 		if (HumanPlayer == State::BLUE)
 		{
 			//This is the right side
+			//Search on LEFT side!
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
 			for (int i = 0; i < (int)m_Size; ++i)
@@ -589,6 +593,7 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 		else
 		{
 			//And this the bottom side
+			//connected to second, so bottom, thus search in top
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
 			for (int i = 0; i < (int)m_Size; ++i)
@@ -916,8 +921,21 @@ void HexGrid::UndoMove()
 	}
 	else
 	{
-		if (PlayedMoves.size() < 2)
+		if (PlayedMoves.size() == 0)
 			return;
+		if (PlayedMoves.size() == 1)
+		{
+			Move m = PlayedMoves[PlayedMoves.size() - 1];
+			m_Grid[m.x][m.y].m_SetState(State::NONE);
+			PlayedMoves.pop_back();
+			wstring first = L"Undid move for ";
+			wstring second = m.Color == State::RED ? L"red " : L"blue ";
+			wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+			wstring txt = first + second + third;
+			origText += txt.c_str();
+			return;
+		}
+
 		Move m = PlayedMoves[PlayedMoves.size() - 1];
 		m_Grid[m.x][m.y].m_SetState(State::NONE);
 		PlayedMoves.pop_back();
