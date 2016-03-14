@@ -252,7 +252,7 @@ auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 
 	HBRUSH WhiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 	SelectObject(hdc,WhiteBrush);
-	TextOut(hdc, 10, 500, kleur.c_str(), kleur.length());
+	TextOut(hdc, 10, 500, kleur.c_str(), static_cast<int>(kleur.length()));
 	DeleteObject(WhiteBrush);
 	HBRUSH NoneBrush = CreateSolidBrush(RGB(240, 240, 240));
 	HBRUSH RedBrush = CreateSolidBrush(RGB(255,0,0));
