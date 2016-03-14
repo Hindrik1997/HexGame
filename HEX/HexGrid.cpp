@@ -486,13 +486,130 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 		SecondNode = RightNode;
 	}
 	State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
-	//Only evaluated two axis, so i still have to do the third one
-
+	
 	if (PlayedMoves.size() < 3)
 		return std::get<0>(moveData);
 
 	Move PrevMove = PlayedMoves[PlayedMoves.size() - 1];
 	Move PrePrevMove = PlayedMoves[PlayedMoves.size() - 3];
+
+	if (m_Grid[PrevMove.x][PrevMove.y].m_GetCubicalZ() == m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ())
+		goto EvaluateZAxis;
+
+	//check if connected so a single side
+	//if so, simply block the opposing side instead. 
+	
+	bool IsConnectedToFirstSide = false;
+	bool IsConnectedToSecondSide = false;
+
+	for (int x = 0; x < (int)m_Size; ++x)
+	{
+		for (int y = 0; y < (int)m_Size; ++y)
+		{
+			if (m_Grid[x][y].m_GetState() == HumanPlayer)
+			{
+				bool MustBreak = false;
+				if (FindPath(&m_Grid[x][y], FirstNode).size() != 0)
+				{
+					//We found a path, so connected to first
+					IsConnectedToFirstSide = true;
+				}
+				if (FindPath(&m_Grid[x][y], SecondNode).size() != 0)
+				{
+					//We found a path to the second node too
+					IsConnectedToSecondSide = true;
+				}
+			}
+		}
+	}
+	
+	Move M = std::get<0>(moveData);
+	HexNode* SuggestedNode = &m_Grid[M.x][M.y];
+
+	if (IsConnectedToFirstSide && !IsConnectedToSecondSide)
+	{
+		//Connected to first side only
+		if (HumanPlayer == State::BLUE)
+		{
+			float Distance = 999.0f;
+			HexNode* ClosestNode = nullptr;
+			for (int i = 0; i < (int)m_Size; ++i)
+			{
+				HexNode* CurrentlyObserving = &m_Grid[(int)m_Size-1][i];
+
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				{
+					ClosestNode = CurrentlyObserving;
+					Distance = GetRealDistance(CurrentlyObserving,SuggestedNode);
+				}
+
+			}
+			return Move{ ClosestNode->m_GetX(), ClosestNode->m_GetY(), OppositeState};
+		}
+		else
+		{
+			//For red this is the top
+			float Distance = 999.0f;
+			HexNode* ClosestNode = nullptr;
+			for (int i = 0; i < (int)m_Size; ++i)
+			{
+				HexNode* CurrentlyObserving = &m_Grid[i][0];
+
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				{
+					ClosestNode = CurrentlyObserving;
+					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
+				}
+
+			}
+			return Move{ ClosestNode->m_GetX(), ClosestNode->m_GetY(), OppositeState };
+		}
+	}
+	if (IsConnectedToSecondSide && !IsConnectedToSecondSide)
+	{
+		//Connected to second side only
+		if (HumanPlayer == State::BLUE)
+		{
+			//This is the right side
+			float Distance = 999.0f;
+			HexNode* ClosestNode = nullptr;
+			for (int i = 0; i < (int)m_Size; ++i)
+			{
+				HexNode* CurrentlyObserving = &m_Grid[0][i];
+
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				{
+					ClosestNode = CurrentlyObserving;
+					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
+				}
+
+			}
+			return Move{ ClosestNode->m_GetX(), ClosestNode->m_GetY(), OppositeState };
+		}
+		else
+		{
+			//And this the bottom side
+			float Distance = 999.0f;
+			HexNode* ClosestNode = nullptr;
+			for (int i = 0; i < (int)m_Size; ++i)
+			{
+				HexNode* CurrentlyObserving = &m_Grid[i][0];
+
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				{
+					ClosestNode = CurrentlyObserving;
+					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
+				}
+
+			}
+			return Move{ ClosestNode->m_GetX(), ClosestNode->m_GetY(), OppositeState };
+		}
+	}
+
+	EvaluateZAxis:
+
+
+	//Only evaluated two axis, so i still have to do the third one
 
 	bool IsOriginal = std::get<2>(moveData);
 
@@ -605,6 +722,7 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			}
 		}
 	}
+
 	return std::get<0>(moveData);
 }
 

@@ -40,7 +40,9 @@ public:
 	static vector<HexNode*> GetFilteredPath(vector<HexNode*>& Path, HexNode* StartNode, HexNode* EndNode);
 	static void GetConnectedNodeSet(HexNode* StartNode, vector<HexNode*>& CurrentSet, const vector<HexNode*>& TotalSet);
 
-	inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
+	static inline int GetDistance(HexNode* FirstNode, HexNode* SecondNode);
+	static inline float GetRealDistance(HexNode* FirstNode, HexNode* SecondNode);
+
 	State GetVictorious();
 	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 
@@ -90,4 +92,9 @@ inline auto HexGrid::get_Size() const -> unsigned int
 inline auto HexGrid::GetDistance(HexNode* FirstNode, HexNode* SecondNode) -> int
 {
 	return (abs(FirstNode->m_GetCubicalX() - SecondNode->m_GetCubicalX()) + abs(FirstNode->m_GetCubicalY() - SecondNode->m_GetCubicalY()) + abs(FirstNode->m_GetCubicalZ() - SecondNode->m_GetCubicalZ())) / 2;
+}
+
+inline auto HexGrid::GetRealDistance(HexNode* FirstNode, HexNode* SecondNode) -> float
+{
+	return static_cast<float>(sqrt(((SecondNode->m_GetX() - FirstNode->m_GetX())*(SecondNode->m_GetX() - FirstNode->m_GetX())) + ((SecondNode->m_GetY() - FirstNode->m_GetY())*(SecondNode->m_GetY() - FirstNode->m_GetY()))));
 }
