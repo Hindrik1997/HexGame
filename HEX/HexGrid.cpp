@@ -1,8 +1,77 @@
 #include "HexGrid.h"
 #include "WindowFunctions.h"
 #include "StateAndAstar.h"
+#include <random>
+#include <chrono>
 
+extern std::chrono::high_resolution_clock::time_point beginning;
 using std::unique_ptr;
+
+std::pair<bool,Move> GetIfTerminalSet(HexGrid& grid) 
+{
+	HexNode* FirstNode;
+	HexNode* SecondNode;
+	if (grid.HumanPlayer == State::RED)
+	{
+		FirstNode = grid.TopNode;
+		SecondNode = grid.BottomNode;
+	}
+	else
+	{
+		FirstNode = grid.LeftNode;
+		SecondNode = grid.RightNode;
+	}
+	State OppositeState = grid.HumanPlayer == State::RED ? State::BLUE : State::RED;
+
+	vector<HexNode*> set = grid.FindTerminalPath(FirstNode,SecondNode);
+
+	int counter = 0;
+	HexNode* CNode = nullptr;
+	for (auto it = set.begin(); it != set.end(); ++it )
+	{
+		if ((*it)->m_GetState() == State::NONE)
+		{
+			CNode = (*it);
+			counter++;
+		}
+	}
+	if (counter == 1)
+	{
+		//Hell yeah it is a terminal move!
+		return std::make_pair(true, Move{ CNode->m_GetX(),CNode->m_GetY(), OppositeState });
+	}
+	else
+		return std::make_pair(false, Move{0,0,State::NONE});
+}
+
+void PlaceRandom(HexGrid& grid) 
+{
+	int length = GetWindowTextLength(ViewList) + 1;
+	std::unique_ptr<WCHAR> TextBuffer(new WCHAR[length]);
+	GetWindowText(ViewList, &(*TextBuffer), length);
+	wstring origText = wstring(&*TextBuffer);
+
+	
+	std::chrono::high_resolution_clock::duration d = std::chrono::high_resolution_clock::now() - beginning;
+	unsigned seed2 = static_cast<unsigned>(d.count());
+
+	std::default_random_engine generator(seed2);
+	std::uniform_int_distribution<int> distributor(0, (grid.get_Size() / 2));
+
+	int x = distributor(generator);
+	int y = distributor(generator);
+
+	x += grid.get_Size() / 4;
+	y += grid.get_Size() / 4;
+	grid.PlayedMoves.push_back(Move{ x,y, State::RED });
+	grid(x,y).m_SetState(State::RED);
+	wstring first = L"Red placed a node on ";
+	wstring second = grid(x,y).GetTextCoord();
+	wstring third = L"\r\n";
+	wstring txt = first + second + third;
+	origText += txt.c_str();
+	SetWindowText(ViewList, origText.c_str());
+}
 
 auto CalculateCoordsAndNeighbours(HexNode* ThisNode, HexNode* StartNode, vector<HexNode*>& EvaluatedSet) -> void
 {
@@ -45,6 +114,12 @@ HexGrid::HexGrid(unsigned int size) : m_Size(size)
 	}
 	CreateGrid();
 	CalculateCubicalCoordinates();
+	if (HumanPlayer == State::BLUE)
+	{
+		//Computer goes first
+		//Play Node in middle section somewhere
+		PlaceRandom(*this);
+	}
 }
 
 HexGrid::~HexGrid()
@@ -814,10 +889,10 @@ auto HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * StartNode, HexNo
 	return FPath;
 }
 
-void HexGrid::ApplyPieRule()
+bool HexGrid::ApplyPieRule()
 {
-	if (IsPieRuleApplied)
-		return;
+	if (IsPieRuleApplied || PlayedMoves.size() != 1)
+		return false;
 	if (HumanPlayer != State::NONE)
 	{
 		State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
@@ -828,6 +903,8 @@ void HexGrid::ApplyPieRule()
 	{
 		//Still has to be implemented!
 	}
+	MessageBox(NULL, L"Pie rule applied!", L"Pie rule", MB_OK);
+	return true;
 }
 
 auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
@@ -891,6 +968,9 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			return;
 		}
 		Move m = g_hexGrid->EvaluateComputedMove(g_hexGrid->ComputeBestMove());
+		std::pair<bool,Move> TermMove = GetIfTerminalSet(*this);
+		if (TermMove.first == true)
+			m = TermMove.second;
 		State OppositeState = g_hexGrid->HumanPlayer == State::RED ? State::BLUE : State::RED;
 		(*g_hexGrid)(m.x, m.y).m_SetState(OppositeState);
 		if (OppositeState == State::RED)
@@ -962,6 +1042,9 @@ void HexGrid::UndoMove()
 			wstring third = m_Grid[m.x][m.y].GetTextCoord() + L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
+			SetWindowText(ViewList, origText.c_str());
+			if (PlayedMoves.size() == 0 && HumanPlayer == State::BLUE)
+				PlaceRandom(*this);
 			return;
 		}
 
@@ -983,6 +1066,9 @@ void HexGrid::UndoMove()
 		wstring txt2 = first2 + second2 + third2;
 		origText += txt2.c_str();
 	}
+
+	if (PlayedMoves.size() == 0 && HumanPlayer == State::BLUE)
+		PlaceRandom(*this);
 	SetWindowText(ViewList, origText.c_str());
 }
 
@@ -1063,6 +1149,96 @@ auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vec
 				}
 				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor,SpecEndNode);
 				
+				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
+				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+				{
+					OpenSet.push_back(NghBor);
+					(&*mappedData)[NghBor->m_GetID()].m_isInOpenSet = true;
+				}
+			}
+		}
+	}
+	return vector<HexNode*>();
+}
+
+vector<HexNode*> HexGrid::FindTerminalPath(HexNode * StartNode, HexNode * EndNode)
+{
+
+	State StartState = StartNode->m_GetState();
+	State OppositeState = StartState == State::RED ? State::BLUE : State::RED;
+
+	if (StartNode->m_GetState() != State::NONE && EndNode->m_GetState() != State::NONE && StartNode->m_GetState() != EndNode->m_GetState())
+	{
+		//No path possible
+		return vector<HexNode*>();
+	}
+	int size = (StartNode)->m_GetHexGrid()->get_Size();
+	vector<HexNode*> OpenSet;
+	vector<HexNode*> ClosedSet; //vector blijkt uit tests consistenter lagere timings te geven dan andere STL containers die ik getest heb, oa wanneer de grootte toeneemt
+	unique_ptr<NodeAstarData> mappedData(new NodeAstarData[size * size + 4]); 	//Ik sla de extra data op in een array. Ik had eerst een map met een key value pair, maar alle hexes naar een array mappen bleek twee maal zo snel. Dit zorgt voor kleine een vertraging, echter hierdoor kan ik wel meerdere paden tegelijk doen. (Multithreaden)
+	for (int i = 0; i < 4; ++i)
+	{
+		(&*mappedData)[size * size + i].isSpecial = true;
+	}
+	OpenSet.push_back(StartNode);
+	(&*mappedData)[StartNode->m_GetID()].m_isInOpenSet = true;
+
+	NodeAstarData start;
+	NodeAstarData end;
+	(&*mappedData)[StartNode->m_GetID()] = start;
+	(&*mappedData)[EndNode->m_GetID()] = end;
+
+	while (OpenSet.size() > 0)
+	{
+		HexNode* CurrentLocation = OpenSet.front();
+		//Gezien de beperkte grootte van de OpenSet, is het voor mij sneller om de hele set te doorzoeken dan om een binary heap te implementen en steeds te sorteren. Daar waar hij met heap ~44 microseconden neemt worst case, en ~25 microseconden zonder op mijn eigen pc.
+		for (int i = 0; i < OpenSet.size(); ++i)
+		{
+			if ((&*mappedData)[OpenSet[i]->m_GetID()].m_fCost() < (&*mappedData)[CurrentLocation->m_GetID()].m_fCost())
+			{
+				CurrentLocation = OpenSet[i];
+			}
+		}
+		OpenSet.erase(std::remove(OpenSet.begin(), OpenSet.end(), CurrentLocation));
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInOpenSet = false;
+		ClosedSet.push_back(CurrentLocation);
+		(&*mappedData)[CurrentLocation->m_GetID()].m_isInClosedSet = true;
+
+		if (CurrentLocation == EndNode)
+		{
+			return RetracePath(StartNode, EndNode, mappedData);
+		}
+
+		for (auto it = CurrentLocation->m_Neighbours.begin(); it != CurrentLocation->m_Neighbours.end(); it++)
+		{
+			HexNode* NghBor = *it;
+
+			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
+				continue;
+
+			int weight = NghBor->m_GetState() == StartState ? 0 : 1000000;
+			int Distance = GetDistance(CurrentLocation, NghBor);
+			if (CurrentLocation == StartNode || NghBor == EndNode)
+			{
+				Distance = 0;
+			}
+
+			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + Distance * weight;
+			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
+			{
+
+				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
+				HexNode* SpecEndNode;
+				if (StartState == State::RED)
+				{
+					SpecEndNode = &m_Grid[CurrentLocation->m_GetX()][m_Size - 1];
+				}
+				else
+				{
+					SpecEndNode = &m_Grid[m_Size - 1][CurrentLocation->m_GetY()];
+				}
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, SpecEndNode);
+
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 				{

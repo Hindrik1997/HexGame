@@ -13,26 +13,13 @@ En op basis van deze pointer weet ik dus de instance en call ik de bijhorende Wn
 De WndProc van de windowclass (De Windows window class, niet de c++ class) verwijst naar een static WndProc welke de verborgen pointer uit leest.
 Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel is met windows' zijn WndProc functie pointer vereiste. (Wat een standaar C functie is, aka vrije functie)
 */
-HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton, PathButton;
+HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton, PathButton, PieButt;
 vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
 int LeftOffset = 60;
 int TopOffset = 80;
 int HexGrootte = 30;
 bool CallInitUpdate = false;
-
-auto CheckMessage() -> bool
-{
-	MSG Msg;
-	if (PeekMessage(&Msg, NULL, NULL, NULL,PM_REMOVE))
-	{
-		if (Msg.message == WM_QUIT)
-			return false;
-		TranslateMessage(&Msg);
-		DispatchMessage(&Msg);
-	}
-	return true;
-}
 
 static HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255)); //black
 
@@ -46,7 +33,8 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
 			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accept", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
 			UndoButton = CreateWindowEx(NULL, L"BUTTON", L"Undo", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
-			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 470, 80, 24, hwnd, (HMENU)6, NULL, NULL);
+			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 240, 494, 80, 24, hwnd, (HMENU)6, NULL, NULL);
+			PieButt = CreateWindowEx(NULL, L"BUTTON", L"Apply Pie rule", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 330, 494, 160, 24, hwnd, (HMENU)7, NULL, NULL);
 			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by H3X: The Game! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
@@ -87,7 +75,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					int length2 = GetWindowTextLength(CommandField) + 1;
 					std::unique_ptr<WCHAR> TextBuffer2(new WCHAR[length2]);
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
-					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
+					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer), hwnd);
 				}
 				break;
 			case 5:
@@ -115,7 +103,8 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				//Turn on
 				for (auto it = g_hexGrid->PotPath.begin(); it != g_hexGrid->PotPath.end(); it++)
 				{
-				FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
+					if((*it) != g_hexGrid->LeftNode && (*it) != g_hexGrid->RightNode && (*it) != g_hexGrid->BottomNode && (*it) != g_hexGrid->TopNode)
+					FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
 				}
 				}
 				ReleaseDC(hwnd,hdc);
@@ -123,6 +112,20 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 				}
 			}
 				break;
+			case 7:
+			{
+				if (g_hexGrid != nullptr)
+				{
+					bool result = g_hexGrid->ApplyPieRule();
+					if (result)
+					{
+						HDC hdc = GetDC(hwnd);
+						UpdateHexes(hdc,*g_hexGrid);
+						ReleaseDC(hwnd, hdc);
+					}
+				}
+			}
+			break;
 			}
 			break;
 		case WM_LBUTTONDOWN:
@@ -206,15 +209,14 @@ auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 	return hwnd;
 }
 
-auto ProcessCommands(wstring Command,wstring Contents) -> void
+auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 {
-	if (Command == L"help") 
+	if (Command == L"h") 
 	{
 		wstring Text = Contents;
 		Text += L"\r\n Help: \r\n";
 		Text += L"- Commands \r\n";
 		Text += L" h	Print this help menu \r\n";
-		Text += L" o	Set options \r\n";
 		Text += L" p	Apply pie rule \r\n";
 		Text += L" n	Start new game \r\n";
 		Text += L" u	undo a move \r\n";
@@ -225,6 +227,36 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 	}
 	else
 	{
+		if (Command == L"q")
+		{
+			PostQuitMessage(0);
+			return;
+		}
+		if (Command == L"u" && g_hexGrid != nullptr)
+		{
+			g_hexGrid->UndoMove();
+			HDC dc = GetDC(hwnd);
+			UpdateHexes(dc,*g_hexGrid);
+			ReleaseDC(hwnd, dc);
+			return;
+		}
+		if (Command == L"p")
+		{
+			if (g_hexGrid != nullptr)
+			{
+				bool result = g_hexGrid->ApplyPieRule();
+				if (result)
+				{
+					HDC hdc = GetDC(hwnd);
+					UpdateHexes(hdc, *g_hexGrid);
+					ReleaseDC(hwnd, hdc);
+				}
+			}
+		}
+		if (Command == L"n")
+		{
+			//i don't know how to fix this, but i will find a way to solve this!
+		}
 		Contents += L"\r\nUnknown command!";
 		SetWindowText(ViewList, Contents.c_str());
 	}
@@ -232,7 +264,7 @@ auto ProcessCommands(wstring Command,wstring Contents) -> void
 
 auto UpdateHexes(HDC & hdc, HexGrid & hexGrid) -> void
 {
-	wstring kleur = g_hexGrid->HumanPlayer == State::BLUE ? L"You play as blue" : L"You play as red";
+	wstring kleur = g_hexGrid->HumanPlayer == State::BLUE ? L"You play as blue      " : L"You play as red      "; //Spaties ivm overdrawen van vorige letters, omdat blue langer is dan red, dus er dan 'rede' blijft staan bij pie rule
 
 	HBRUSH WhiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 	SelectObject(hdc,WhiteBrush);

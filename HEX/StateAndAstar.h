@@ -26,12 +26,6 @@ struct NodeAstarData {
 	NodeAstarData(int hCost = 0, int gCost = 0, HexNode* parent = nullptr) : m_hCost(hCost), m_gCost(gCost), m_Parent(parent) {}
 };
 
-enum class Player : char 
-{
-	Computer,
-	Human
-};
-
 struct Move 
 {
 	int x;

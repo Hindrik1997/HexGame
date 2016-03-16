@@ -1,8 +1,12 @@
 #include "WindowFunctions.h"
 #include "HexGrid.h"
+#include <chrono>
+
+std::chrono::high_resolution_clock::time_point beginning = std::chrono::high_resolution_clock::now();
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
+
 	wstring ClassName = { L"H3X" };
 	wstring WindowTitle = {L"H3X: The Game"};
 	int Width = 1000;
@@ -25,9 +29,12 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	CallInitUpdate = true;
 	ReleaseDC(hwnd, hdc);
 	//Main loop
+	MSG Msg = {0};
 	do
 	{
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
 	} 
-	while (CheckMessage() != false);
+	while (GetMessage(&Msg,NULL,NULL,NULL));
 	return 0;
 }

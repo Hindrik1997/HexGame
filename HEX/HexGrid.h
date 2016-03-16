@@ -34,6 +34,7 @@ private:
 public:
 	vector<HexNode*> FindPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	vector<HexNode*> FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
+	vector<HexNode*> FindTerminalPath(HexNode* StartNode, HexNode* EndNode);  //Returns empty vector if no path is found!
 	vector<HexNode*> FindBestPotentialNonWeightedPath(HexNode* StartNode, HexNode* EndNode); //Returns empty vector if no path is found!
 	vector<HexNode*> RetracePath(HexNode* Start, HexNode* End, unique_ptr<NodeAstarData>& nData);
 
@@ -47,7 +48,7 @@ public:
 	static bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 
 	bool IsPieRuleApplied = false;
-	void ApplyPieRule();
+	bool ApplyPieRule();
 	void PlayMove(Move move, HWND hwnd);
 	void UndoMove();
 	std::tuple<Move, vector<HexNode*>, bool> ComputeBestMove();
