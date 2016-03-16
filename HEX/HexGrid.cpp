@@ -336,7 +336,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 			BestPotentialPath[i]->m_SetState(OppositeState);
 
 			vector<HexNode*> NewPotentialPath = FindBestPotentialPath(FirstNode,SecondNode);
-			if ((int)NewPotentialPath.size() == 0)
+			if (static_cast<int>(NewPotentialPath.size()) == 0)
 			{
 				BestPotentialPath[i]->m_SetState(PrevState);
 				NewLength = static_cast<int>(NewPotentialPath.size());
@@ -344,7 +344,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 				break;
 			}
 
-			if ((int)NewPotentialPath.size() > NewLength)
+			if (static_cast<int>(NewPotentialPath.size()) > NewLength)
 			{				
 				NewLength = static_cast<int>(NewPotentialPath.size());
 				NodeIndex = i;
@@ -402,7 +402,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 					SecondPath[i]->m_SetState(OppositeState);
 
 					vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
-					if ((int)NewPotentialPath.size() == 0)
+					if (static_cast<int>(NewPotentialPath.size()) == 0)
 					{
 						SecondPath[i]->m_SetState(PrevState);
 						SecondNewLength = static_cast<int>(NewPotentialPath.size());
@@ -410,7 +410,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 						break;
 					}
 
-					if ((int)NewPotentialPath.size() > SecondNewLength)
+					if (static_cast<int>(NewPotentialPath.size()) > SecondNewLength)
 					{
 						SecondNewLength = static_cast<int>(NewPotentialPath.size());
 						SecondNodeIndex = i;
@@ -445,7 +445,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 						SecondPath[i]->m_SetState(OppositeState);
 
 						vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
-						if ((int)NewPotentialPath.size() == 0)
+						if (static_cast<int>(NewPotentialPath.size()) == 0)
 						{
 							SecondPath[i]->m_SetState(PrevState);
 							SecondNewLength = static_cast<int>(NewPotentialPath.size());
@@ -453,7 +453,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 							break;
 						}
 
-						if ((int)NewPotentialPath.size() > SecondNewLength)
+						if (static_cast<int>(NewPotentialPath.size()) > SecondNewLength)
 						{
 							SecondNewLength = static_cast<int>(NewPotentialPath.size());
 							SecondNodeIndex = i;
@@ -491,7 +491,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 							TSecondPath[i]->m_SetState(OppositeState);
 
 							vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], SecondNode);
-							if ((int)NewPotentialPath.size() == 0)
+							if (static_cast<int>(NewPotentialPath.size()) == 0)
 							{
 								TSecondPath[i]->m_SetState(PrevState);
 								SecondNewLength = static_cast<int>(NewPotentialPath.size());
@@ -499,7 +499,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 								break;
 							}
 
-							if ((int)NewPotentialPath.size() > SecondNewLength)
+							if (static_cast<int>(NewPotentialPath.size()) > SecondNewLength)
 							{
 								SecondNewLength = static_cast<int>(NewPotentialPath.size());
 								SecondNodeIndex = i;
@@ -530,7 +530,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 							TFirstPath[i]->m_SetState(OppositeState);
 
 							vector<HexNode*> NewPotentialPath = FindBestPotentialNonWeightedPath(&m_Grid[opponLast.x][opponLast.y], FirstNode);
-							if ((int)NewPotentialPath.size() == 0)
+							if (static_cast<int>(NewPotentialPath.size()) == 0)
 							{
 								TFirstPath[i]->m_SetState(PrevState);
 								SecondNewLength = static_cast<int>(NewPotentialPath.size());
@@ -538,7 +538,7 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 								break;
 							}
 
-							if ((int)NewPotentialPath.size() > SecondNewLength)
+							if (static_cast<int>(NewPotentialPath.size()) > SecondNewLength)
 							{
 								SecondNewLength = static_cast<int>(NewPotentialPath.size());
 								SecondNodeIndex = i;
@@ -589,9 +589,9 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 	bool IsConnectedToFirstSide = false;
 	bool IsConnectedToSecondSide = false;
 
-	for (int x = 0; x < (int)m_Size; ++x)
+	for (int x = 0; x < static_cast<int>(m_Size); ++x)
 	{
-		for (int y = 0; y < (int)m_Size; ++y)
+		for (int y = 0; y < static_cast<int>(m_Size); ++y)
 		{
 			if (m_Grid[x][y].m_GetState() == HumanPlayer)
 			{
@@ -621,9 +621,9 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			//Connected to first side, place on second side! which is the RIGHT side here
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
-			for (int i = 0; i < (int)m_Size; ++i)
+			for (int i = 0; i < static_cast<int>(m_Size); ++i)
 			{
-				HexNode* CurrentlyObserving = &m_Grid[(int)m_Size-1][i];
+				HexNode* CurrentlyObserving = &m_Grid[static_cast<int>(m_Size)-1][i];
 				if (CurrentlyObserving->m_GetState() != State::NONE)
 					continue;
 
@@ -642,9 +642,9 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			//Connected to first side, so search for second which is BOTTOM
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
-			for (int i = 0; i < (int)m_Size; ++i)
+			for (int i = 0; i < static_cast<int>(m_Size); ++i)
 			{
-				HexNode* CurrentlyObserving = &m_Grid[i][(int)m_Size - 1];
+				HexNode* CurrentlyObserving = &m_Grid[i][static_cast<int>(m_Size) - 1];
 				if (CurrentlyObserving->m_GetState() != State::NONE)
 					continue;
 
@@ -667,7 +667,7 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			//Search on LEFT side!
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
-			for (int i = 0; i < (int)m_Size; ++i)
+			for (int i = 0; i < static_cast<int>(m_Size); ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[0][i];
 				if (CurrentlyObserving->m_GetState() != State::NONE)
@@ -688,7 +688,7 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			//connected to second, so bottom, thus search in top
 			float Distance = 999.0f;
 			HexNode* ClosestNode = nullptr;
-			for (int i = 0; i < (int)m_Size; ++i)
+			for (int i = 0; i < static_cast<int>(m_Size); ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[i][0];
 				if (CurrentlyObserving->m_GetState() != State::NONE)

@@ -223,7 +223,7 @@ auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 		int yCoord = wcstol(tString.c_str(), nullptr,0);
 		int YC = yCoord;
 
-		if (XC < 0 || XC > g_hexGrid->get_Size() || YC < 0 || YC > g_hexGrid->get_Size())
+		if (XC < 0 || XC > static_cast<int>(g_hexGrid->get_Size()) || YC < 0 || YC > static_cast<int>(g_hexGrid->get_Size()))
 			return;
 		if(g_hexGrid != nullptr)
 			g_hexGrid->PlayMove(Move{ XC - 1, YC - 1, g_hexGrid->HumanPlayer }, hwnd);
@@ -240,7 +240,7 @@ auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 		Text += L"- Commands \r\n";
 		Text += L" h	Print this help menu \r\n";
 		Text += L" p	Apply pie rule \r\n";
-		Text += L" n	Start new game \r\n";
+		//Text += L" n	Start new game \r\n";
 		Text += L" u	undo a move \r\n";
 		Text += L" q	Quit H3X \r\n";
 		Text += L"\r\nOr enter a move such as: F5, \r\n";
