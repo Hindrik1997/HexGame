@@ -9,6 +9,7 @@
 using std::string;
 using std::wstring;
 
+extern vector<HexNode*> oldPath;
 extern HexGrid* g_hexGrid;
 extern bool CallInitUpdate;
 extern HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton;

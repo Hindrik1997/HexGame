@@ -6,7 +6,6 @@ HexNode::HexNode(int x, int y, const HexGrid& hRef,int ID) : m_X(x), m_Y(y), m_P
 {
 }
 
-
 HexNode::~HexNode()
 {
 

@@ -24,7 +24,7 @@ std::pair<bool,Move> GetIfTerminalSet(HexGrid& grid)
 	State OppositeState = grid.HumanPlayer == State::RED ? State::BLUE : State::RED;
 
 	vector<HexNode*> set = grid.FindTerminalPath(FirstNode,SecondNode);
-
+	oldPath = set;
 	int counter = 0;
 	HexNode* CNode = nullptr;
 	for (auto it = set.begin(); it != set.end(); ++it )
@@ -1161,7 +1161,7 @@ auto HexGrid::FindBestPotentialPath(HexNode* StartNode, HexNode* EndNode) -> vec
 	return vector<HexNode*>();
 }
 
-vector<HexNode*> HexGrid::FindTerminalPath(HexNode * StartNode, HexNode * EndNode)
+auto HexGrid::FindTerminalPath(HexNode * StartNode, HexNode * EndNode) -> vector<HexNode*>
 {
 
 	State StartState = StartNode->m_GetState();
@@ -1216,28 +1216,15 @@ vector<HexNode*> HexGrid::FindTerminalPath(HexNode * StartNode, HexNode * EndNod
 			if ( /*  If Not traversable */  (NghBor->m_GetState() == OppositeState) /* OR in Closed Set*/ || (&*mappedData)[NghBor->m_GetID()].m_isInClosedSet)
 				continue;
 
-			int weight = NghBor->m_GetState() == StartState ? 0 : 1000000;
+			int weight = NghBor->m_GetState() == StartState ? 0 : 1000;
 			int Distance = GetDistance(CurrentLocation, NghBor);
-			if (CurrentLocation == StartNode || NghBor == EndNode)
-			{
-				Distance = 0;
-			}
 
 			int newMovementCostToNeighbour = (&*mappedData)[CurrentLocation->m_GetID()].m_gCost + Distance * weight;
 			if (newMovementCostToNeighbour < (&*mappedData)[NghBor->m_GetID()].m_gCost || (&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)
 			{
 
 				(&*mappedData)[NghBor->m_GetID()].m_gCost = newMovementCostToNeighbour;
-				HexNode* SpecEndNode;
-				if (StartState == State::RED)
-				{
-					SpecEndNode = &m_Grid[CurrentLocation->m_GetX()][m_Size - 1];
-				}
-				else
-				{
-					SpecEndNode = &m_Grid[m_Size - 1][CurrentLocation->m_GetY()];
-				}
-				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, SpecEndNode);
+				(&*mappedData)[NghBor->m_GetID()].m_hCost = GetDistance(NghBor, EndNode);
 
 				(&*mappedData)[NghBor->m_GetID()].m_Parent = CurrentLocation;
 				if ((&*mappedData)[NghBor->m_GetID()].m_isInOpenSet == false)

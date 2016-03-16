@@ -13,6 +13,7 @@ En op basis van deze pointer weet ik dus de instance en call ik de bijhorende Wn
 De WndProc van de windowclass (De Windows window class, niet de c++ class) verwijst naar een static WndProc welke de verborgen pointer uit leest.
 Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel is met windows' zijn WndProc functie pointer vereiste. (Wat een standaar C functie is, aka vrije functie)
 */
+
 HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton, PathButton, PieButt;
 vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
@@ -211,6 +212,28 @@ auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 
 auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 {
+	if (Command.length() == 2)
+	{
+		const wchar_t letters[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		int XC = -1;
+		int YC = wcstol(&Command[1], nullptr,0);
+		//Coordinate
+		for (int i = 0; i < sizeof(letters); ++i)
+		{
+			if (letters[i] == Command[0])
+			{
+				XC = i;
+				break;
+			}
+		}
+		if(g_hexGrid != nullptr)
+			g_hexGrid->PlayMove(Move{ XC, YC, g_hexGrid->HumanPlayer }, hwnd);
+
+		HDC dc = GetDC(hwnd);
+		UpdateHexes(dc, *g_hexGrid);
+		ReleaseDC(hwnd,dc);
+		return;
+	}
 	if (Command == L"h") 
 	{
 		wstring Text = Contents;
