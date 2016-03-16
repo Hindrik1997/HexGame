@@ -212,22 +212,21 @@ auto InitializeWindow(HINSTANCE hInstance, wstring WindowClassName, wstring Wind
 
 auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 {
-	if (Command.length() == 2)
+	if (Command.length() > 1)
 	{
-		const wchar_t letters[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		int XC = -1;
-		int YC = wcstol(&Command[1], nullptr,0);
-		//Coordinate
-		for (int i = 0; i < sizeof(letters); ++i)
+		int XC = towupper(Command[0]) - 64;
+		wstring tString;
+		for (int i = 1; i < Command.length(); ++i)
 		{
-			if (letters[i] == Command[0])
-			{
-				XC = i;
-				break;
-			}
+			tString += Command[i];
 		}
+		int yCoord = wcstol(tString.c_str(), nullptr,0);
+		int YC = yCoord;
+
+		if (XC < 0 || XC > g_hexGrid->get_Size() || YC < 0 || YC > g_hexGrid->get_Size())
+			return;
 		if(g_hexGrid != nullptr)
-			g_hexGrid->PlayMove(Move{ XC, YC, g_hexGrid->HumanPlayer }, hwnd);
+			g_hexGrid->PlayMove(Move{ XC - 1, YC - 1, g_hexGrid->HumanPlayer }, hwnd);
 
 		HDC dc = GetDC(hwnd);
 		UpdateHexes(dc, *g_hexGrid);
