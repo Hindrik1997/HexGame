@@ -11,7 +11,7 @@ using std::wstring;
 
 extern HexGrid* g_hexGrid;
 extern bool CallInitUpdate;
-extern HWND CommandField, AcceptButton, ViewList, CommandTextLabel, PathButton;
+extern HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton;
 
 bool CheckMessage();
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

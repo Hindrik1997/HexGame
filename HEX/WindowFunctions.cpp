@@ -11,9 +11,9 @@ Normaal gesproken zou ik een window class gemaakt hebben en WndProc als instance
 Dit door een pointer naar de instance te verbergen in de extra bytes van de window struct.
 En op basis van deze pointer weet ik dus de instance en call ik de bijhorende WndProc instance member functie.
 De WndProc van de windowclass (De Windows window class, niet de c++ class) verwijst naar een static WndProc welke de verborgen pointer uit leest.
-Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel is met windows' zijn WndProc functie pointer vereiste. (Wat een standaar C functie is)
+Dit ivm de verborgen this pointer van een instance variabele, welke incompitabel is met windows' zijn WndProc functie pointer vereiste. (Wat een standaar C functie is, aka vrije functie)
 */
-HWND CommandField, AcceptButton, ViewList, CommandTextLabel, PathButton;
+HWND CommandField, AcceptButton, ViewList, CommandTextLabel, UndoButton, PathButton;
 vector<HexNode*> oldPath;
 HexGrid* g_hexGrid;
 int LeftOffset = 60;
@@ -45,7 +45,8 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			CommandTextLabel = CreateWindowEx(NULL, L"STATIC", L"Command: ", WS_VISIBLE | WS_CHILD, 10, 520, 80, 20, hwnd, NULL, NULL, NULL);
 			CommandField = CreateWindowEx(NULL, L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 90, 520, 400, 20, hwnd, NULL, NULL, NULL);
 			AcceptButton = CreateWindowEx(NULL, L"BUTTON", L"Accept", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 518, 80, 24, hwnd, (HMENU)1, NULL, NULL);
-			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Undo", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
+			UndoButton = CreateWindowEx(NULL, L"BUTTON", L"Undo", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
+			PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 470, 80, 24, hwnd, (HMENU)6, NULL, NULL);
 			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by H3X: The Game! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
@@ -86,51 +87,11 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					int length2 = GetWindowTextLength(CommandField) + 1;
 					std::unique_ptr<WCHAR> TextBuffer2(new WCHAR[length2]);
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
-					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));					
-					/*
-					HDC hdc = GetDC(hwnd);
-					UpdateHexes(hdc,*g_hexGrid);
-					auto t1 = std::chrono::high_resolution_clock::now();
-					//g_hexGrid->LeftNode->m_SetState(State::NONE);
-					//g_hexGrid->RightNode->m_SetState(State::NONE);
-					oldPath = g_hexGrid->FindPath(g_hexGrid->LeftNode, &(*g_hexGrid)(10,10));
-					auto t2 = std::chrono::high_resolution_clock::now();
-					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-					MessageBox(NULL, std::to_wstring(duration).c_str(), L"TIME RAN FOR SEARCH:", MB_OK);
-					if (oldPath.size() == 0)
-					{
-						MessageBox(NULL, L"EMPTY", L"EMPTY", MB_OK);
-						break;
-					}
-					for (auto it = oldPath.begin(); it != oldPath.end(); it++)
-					{
-						FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255,0,255));
-					}
-					*/	
+					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer));
 				}
 				break;
 			case 5:
 			{
-				/*
-				if (g_hexGrid != nullptr)
-				{
-					HDC hdc = GetDC(hwnd);
-					if (g_hexGrid->IsVisible)
-					{
-						//Turn off
-						UpdateHexes(hdc, *g_hexGrid);
-					}
-					else
-					{
-						//Turn on
-						for (auto it = g_hexGrid->PotPath.begin(); it != g_hexGrid->PotPath.end(); it++)
-						{
-							FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
-						}
-					}
-					ReleaseDC(hwnd,hdc);
-					g_hexGrid->IsVisible = !g_hexGrid->IsVisible;
-				}*/
 				if (g_hexGrid != nullptr)
 					g_hexGrid->UndoMove();
 				HDC dc = GetDC(hwnd);
@@ -139,6 +100,29 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 
 			}
 			break;
+			case 6:
+			{
+				if (g_hexGrid != nullptr)
+				{
+				HDC hdc = GetDC(hwnd);
+				if (g_hexGrid->IsVisible)
+				{
+				//Turn off
+				UpdateHexes(hdc, *g_hexGrid);
+				}
+				else
+				{
+				//Turn on
+				for (auto it = g_hexGrid->PotPath.begin(); it != g_hexGrid->PotPath.end(); it++)
+				{
+				FillHexColor(hdc, *g_hexGrid, (*it)->m_GetX(), (*it)->m_GetY(), RGB(255, 0, 255));
+				}
+				}
+				ReleaseDC(hwnd,hdc);
+				g_hexGrid->IsVisible = !g_hexGrid->IsVisible;
+				}
+			}
+				break;
 			}
 			break;
 		case WM_LBUTTONDOWN:
@@ -303,7 +287,7 @@ auto DrawHexes(HDC& hdc, HexGrid& hexGrid) -> void
 			int hexMiddleY = y*HexGrootte + TopOffset;
 
 			wchar_t Xletter[1] = {letters[x]};
-			wstring Yletters = std::to_wstring(y);
+			wstring Yletters = std::to_wstring(y + 1);
 
 			//TopText
 			if (y == 0)

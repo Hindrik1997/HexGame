@@ -44,7 +44,7 @@ public:
 	static inline float GetRealDistance(HexNode* FirstNode, HexNode* SecondNode);
 
 	State GetVictorious();
-	bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
+	static bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 
 	void PlayMove(Move move, HWND hwnd);
 	void UndoMove();

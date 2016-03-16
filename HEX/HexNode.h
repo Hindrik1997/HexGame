@@ -2,11 +2,13 @@
 #include <vector>
 #include <memory>
 #include "StateAndAstar.h"
+#include <string>
 
 //Forward declaration vanwege circuliere dependency
 class HexGrid;
 
 using std::vector;
+using std::wstring;
 
 class HexNode
 {
@@ -14,6 +16,9 @@ public:
 	HexNode(int x, int y, const HexGrid& hRef,int ID);
 	~HexNode();
 	void CalculateConnections();
+
+	wstring GetTextCoord();
+
 	inline int m_GetX() const;
 	inline int m_GetY() const;
 	inline int m_GetCubicalX() const;

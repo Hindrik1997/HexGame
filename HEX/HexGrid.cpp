@@ -285,6 +285,17 @@ auto HexGrid::ComputeBestMove() -> std::tuple<Move, vector<HexNode*>,bool>
 
 			if (BestPotentialPath[NodeIndex]->m_GetX() == opponLast.x && BestPotentialPath[NodeIndex]->m_GetY() == opponLast.y)
 				return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState },BestPotentialPath,true);
+			
+			//Check if when placed, the amount of turns for the opponent is larger to win
+
+			HexNode* MoveT = BestPotentialPath[NodeIndex];
+			MoveT->m_SetState(OppositeState);
+			if (FindBestPotentialPath(FirstNode, SecondNode).size() >= BestPotentialPath.size())
+			{
+				MoveT->m_SetState(State::NONE);
+				return  std::make_tuple(Move{ BestPotentialPath[NodeIndex]->m_GetX(),BestPotentialPath[NodeIndex]->m_GetY(), OppositeState }, BestPotentialPath, true);
+			}
+			MoveT->m_SetState(State::NONE);
 		}
 		else
 		{
@@ -831,7 +842,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			m_Grid[move.x][move.y].m_SetState(State::BLUE);
 			FillHexBlue(dc, *g_hexGrid, move.x, move.y);
 			wstring first = L"Blue placed a node on ";
-			wstring second = std::to_wstring(move.x) + L" - " + std::to_wstring(move.y);
+			wstring second = m_Grid[move.x][move.y].GetTextCoord();
 			wstring third = L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
@@ -843,7 +854,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 			m_Grid[move.x][move.y].m_SetState(State::RED);
 			FillHexRed(dc, *g_hexGrid, move.x, move.y);
 			wstring first = L"Red placed a node on ";
-			wstring second = std::to_wstring(move.x) + L" - " + std::to_wstring(move.y);
+			wstring second = m_Grid[move.x][move.y].GetTextCoord();
 			wstring third = L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
@@ -867,7 +878,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 		if (OppositeState == State::RED)
 		{
 			wstring first = L"Computer placed a red node on ";
-			wstring second = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y);
+			wstring second = m_Grid[m.x][m.y].GetTextCoord();
 			wstring third = L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
@@ -875,7 +886,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 		else
 		{
 			wstring first = L"Computer placed a blue node on ";
-			wstring second = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y);
+			wstring second = m_Grid[m.x][m.y].GetTextCoord();
 			wstring third = L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
@@ -915,7 +926,7 @@ void HexGrid::UndoMove()
 		PlayedMoves.pop_back();
 		wstring first = L"Undid move for ";
 		wstring second = m.Color == State::RED ? L"red " : L"blue ";
-		wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+		wstring third = m_Grid[m.x][m.y].GetTextCoord() + L"\r\n";
 		wstring txt = first + second + third;
 		origText += txt.c_str();
 	}
@@ -930,7 +941,7 @@ void HexGrid::UndoMove()
 			PlayedMoves.pop_back();
 			wstring first = L"Undid move for ";
 			wstring second = m.Color == State::RED ? L"red " : L"blue ";
-			wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+			wstring third = m_Grid[m.x][m.y].GetTextCoord() + L"\r\n";
 			wstring txt = first + second + third;
 			origText += txt.c_str();
 			return;
@@ -941,7 +952,7 @@ void HexGrid::UndoMove()
 		PlayedMoves.pop_back();
 		wstring first = L"Undid move for ";
 		wstring second = m.Color == State::RED ? L"red " : L"blue ";
-		wstring third = std::to_wstring(m.x) + L" - " + std::to_wstring(m.y) + L"\r\n";
+		wstring third = m_Grid[m.x][m.y].GetTextCoord() + L"\r\n";
 		wstring txt = first + second + third;
 		origText += txt.c_str();
 
@@ -950,7 +961,7 @@ void HexGrid::UndoMove()
 		PlayedMoves.pop_back();
 		wstring first2 = L"Undid move for ";
 		wstring second2 = m2.Color == State::RED ? L"red " : L"blue ";
-		wstring third2 = std::to_wstring(m2.x) + L" - " + std::to_wstring(m2.y) + L"\r\n";
+		wstring third2 = m_Grid[m2.x][m2.y].GetTextCoord() + L"\r\n";
 		wstring txt2 = first2 + second2 + third2;
 		origText += txt2.c_str();
 	}

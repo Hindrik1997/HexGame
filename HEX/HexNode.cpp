@@ -184,3 +184,12 @@ auto HexNode::CalculateConnections() -> void
 		}
 	}
 }
+
+wstring HexNode::GetTextCoord()
+{
+	const wchar_t letters[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	wstring t;
+	t += letters[m_GetX()];
+	t += std::to_wstring(m_GetY() + 1);
+	return t;
+}
