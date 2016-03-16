@@ -504,10 +504,10 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 	Move PrevMove = PlayedMoves[PlayedMoves.size() - 1];
 	Move PrePrevMove = PlayedMoves[PlayedMoves.size() - 3];
 	Move PrePrePrevMove = PlayedMoves[PlayedMoves.size() - 5];
-
+	
 	if (m_Grid[PrevMove.x][PrevMove.y].m_GetCubicalZ() == m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ() && m_Grid[PrePrevMove.x][PrePrevMove.y].m_GetCubicalZ() == m_Grid[PrePrePrevMove.x][PrePrePrevMove.y].m_GetCubicalZ())
 		goto EvaluateZAxis;
-
+	
 	//check if connected so a single side
 	//if so, simply block the opposing side instead. 
 	
@@ -549,8 +549,10 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			for (int i = 0; i < (int)m_Size; ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[(int)m_Size-1][i];
+				if (CurrentlyObserving->m_GetState() != State::NONE)
+					continue;
 
-				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance)
 				{
 					ClosestNode = CurrentlyObserving;
 					Distance = GetRealDistance(CurrentlyObserving,SuggestedNode);
@@ -568,8 +570,10 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			for (int i = 0; i < (int)m_Size; ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[i][(int)m_Size - 1];
+				if (CurrentlyObserving->m_GetState() != State::NONE)
+					continue;
 
-				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance)
 				{
 					ClosestNode = CurrentlyObserving;
 					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
@@ -591,8 +595,10 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			for (int i = 0; i < (int)m_Size; ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[0][i];
+				if (CurrentlyObserving->m_GetState() != State::NONE)
+					continue;
 
-				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance)
 				{
 					ClosestNode = CurrentlyObserving;
 					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
@@ -610,8 +616,10 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 			for (int i = 0; i < (int)m_Size; ++i)
 			{
 				HexNode* CurrentlyObserving = &m_Grid[i][0];
+				if (CurrentlyObserving->m_GetState() != State::NONE)
+					continue;
 
-				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance && CurrentlyObserving->m_GetState() == State::NONE)
+				if (GetRealDistance(CurrentlyObserving, SuggestedNode) < Distance)
 				{
 					ClosestNode = CurrentlyObserving;
 					Distance = GetRealDistance(CurrentlyObserving, SuggestedNode);
@@ -678,14 +686,12 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 
 		if (HumanPlayer == State::BLUE)
 		{
-			if (LeftBClear)
-			{
-				if (FindPath(FirstNode, LowestNode).size() != 0)
+				if (FindPath(FirstNode, LowestNode).size() != 0 && LeftBClear)
 				{
 					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
 					for (auto& node : RightTop)
 					{
-						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
+						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end() && node->m_GetState() == State::NONE)
 						{
 							//this move wins, 
 							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
@@ -697,25 +703,22 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 					//Not connected to lower one
 					for (auto& node : LeftBottom)
 					{
-						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
+						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end() && node->m_GetState() == State::NONE)
 						{
 							//this move wins, 
 							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
 						}
 					}
 				}
-			}
 		}
 		else
 		{
-			if (RightTClear)
-			{
-				if (FindPath(SecondNode, LowestNode).size() != 0)
+				if (FindPath(SecondNode, LowestNode).size() != 0 && RightTClear)
 				{
 					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
 					for (auto& node : RightTop)
 					{
-						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end())
+						if (std::find(FirstNode->m_Neighbours.begin(), FirstNode->m_Neighbours.end(), node) != FirstNode->m_Neighbours.end() && node->m_GetState() == State::NONE)
 						{
 							//this move wins,
 							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
@@ -728,14 +731,13 @@ auto HexGrid::EvaluateComputedMove(std::tuple<Move, vector<HexNode*>, bool> move
 					//Connected to lower one, so check if winning by finding top, if there is a node which is neighbour of our top.
 					for (auto& node : LeftBottom)
 					{
-						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end())
+						if (std::find(SecondNode->m_Neighbours.begin(), SecondNode->m_Neighbours.end(), node) != SecondNode->m_Neighbours.end() && node->m_GetState() == State::NONE)
 						{
 							//this move wins,
 							return Move{ node->m_GetX(),node->m_GetY(), OppositeState };
 						}
 					}
 				}
-			}
 		}
 	}
 
@@ -810,6 +812,22 @@ auto HexGrid::GetFilteredPath(vector<HexNode*>& Path, HexNode * StartNode, HexNo
 		}
 	}
 	return FPath;
+}
+
+void HexGrid::ApplyPieRule()
+{
+	if (IsPieRuleApplied)
+		return;
+	if (HumanPlayer != State::NONE)
+	{
+		State OppositeState = HumanPlayer == State::RED ? State::BLUE : State::RED;
+		HumanPlayer = OppositeState;
+		IsPieRuleApplied = true;
+	}
+	else
+	{
+		//Still has to be implemented!
+	}
 }
 
 auto HexGrid::PlayMove(Move move, HWND hwnd) -> void

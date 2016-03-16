@@ -46,6 +46,8 @@ public:
 	State GetVictorious();
 	static bool OccursInSets(HexNode* Node, vector< vector<HexNode*> >& Set);
 
+	bool IsPieRuleApplied = false;
+	void ApplyPieRule();
 	void PlayMove(Move move, HWND hwnd);
 	void UndoMove();
 	std::tuple<Move, vector<HexNode*>, bool> ComputeBestMove();
