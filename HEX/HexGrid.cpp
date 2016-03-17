@@ -994,7 +994,7 @@ auto HexGrid::PlayMove(Move move, HWND hwnd) -> void
 	}
 	else
 	{
-		//MANUAL
+		//MANUAL //NOT IMPLEMENTED, ONLY IF ENOUGH TIME LEFT
 	}
 	UpdateHexes(dc, *g_hexGrid);
 	if (g_hexGrid->GetVictorious() != State::NONE)

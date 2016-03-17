@@ -46,7 +46,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 		case WM_KEYDOWN:
 			if (wParam == VK_ESCAPE)
 			{
-				if (MessageBox(NULL, L"Weet je zeker dat je wilt stoppen?", L"Meent u dit nou? :(", MB_YESNO | MB_ICONQUESTION) == IDYES) 
+				if (MessageBox(NULL, L"Weet je zeker dat u wilt stoppen?", L"Meent u dit nou? :(", MB_YESNO | MB_ICONQUESTION) == IDYES) 
 				{
 					DestroyWindow(hwnd);
 					PostQuitMessage(0);
@@ -77,16 +77,17 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 					std::unique_ptr<WCHAR> TextBuffer2(new WCHAR[length2]);
 					GetWindowText(CommandField, &(*TextBuffer2), length2);
 					ProcessCommands(wstring(&*TextBuffer2), wstring(&*TextBuffer), hwnd);
+					SendMessage(ViewList, EM_LINESCROLL, 0, 65535); // magic number is lijn waar naar te scrollen, maar dit compenseert als die regel er niet is
 				}
 				break;
 			case 5:
 			{
 				if (g_hexGrid != nullptr)
 					g_hexGrid->UndoMove();
+				SendMessage(ViewList, EM_LINESCROLL, 0, 65535); // magic number is lijn waar naar te scrollen, maar dit compenseert als die regel er niet is
 				HDC dc = GetDC(hwnd);
 				UpdateHexes(dc, *g_hexGrid);
 				ReleaseDC(hwnd, dc);
-
 			}
 			break;
 			case 6:
@@ -123,6 +124,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 						HDC hdc = GetDC(hwnd);
 						UpdateHexes(hdc,*g_hexGrid);
 						ReleaseDC(hwnd, hdc);
+						SendMessage(ViewList, EM_LINESCROLL, 0, 65535); // magic number is lijn waar naar te scrollen, maar dit compenseert als die regel er niet is
 					}
 				}
 			}
@@ -148,6 +150,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 						g_hexGrid->PlayMove(Move{ cNode->m_GetX(), cNode->m_GetY(), State::NONE },hwnd);
 					}
 				}
+				SendMessage(ViewList, EM_LINESCROLL, 0, 65535); // magic number is lijn waar naar te scrollen, maar dit compenseert als die regel er niet is
 			}
 		}
 		break;
@@ -240,7 +243,7 @@ auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 		Text += L"- Commands \r\n";
 		Text += L" h	Print this help menu \r\n";
 		Text += L" p	Apply pie rule \r\n";
-		//Text += L" n	Start new game \r\n";
+		//Text += L" n	Start new game \r\n"; //NOT IMPLEMENTED IN FINAL?
 		Text += L" u	undo a move \r\n";
 		Text += L" q	Quit H3X \r\n";
 		Text += L"\r\nOr enter a move such as: F5, \r\n";
@@ -275,10 +278,11 @@ auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 				}
 			}
 		}
+		/* OPTIONAL
 		if (Command == L"n")
 		{
 			//i don't know how to fix this, but i will find a way to solve this!
-		}
+		}*/
 		Contents += L"\r\nUnknown command!";
 		SetWindowText(ViewList, Contents.c_str());
 	}
