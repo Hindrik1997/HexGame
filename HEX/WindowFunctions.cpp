@@ -277,6 +277,7 @@ auto ProcessCommands(wstring Command,wstring Contents, HWND hwnd) -> void
 					ReleaseDC(hwnd, hdc);
 				}
 			}
+			return;
 		}
 		/* OPTIONAL
 		if (Command == L"n")
