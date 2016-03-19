@@ -3,6 +3,7 @@
 #include <chrono>
 
 std::chrono::high_resolution_clock::time_point beginning = std::chrono::high_resolution_clock::now();
+/*NOTE: Neem commentaar niet altijd letterlijk, er zit ook n hoop oud commentaar in.*/
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
@@ -24,6 +25,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine,
 	HDC hdc = GetDC(hwnd);
 
 	HexGrid h(11);
+
+	if (MessageBox(NULL, L"Do you want to play with the Pie rule?", L" Question ", MB_YESNO) == IDNO)
+	{
+		h.IsPieRuleApplied = true; //Disables pie rule also
+	}
 	g_hexGrid = &h;
 	DrawHexes(hdc,*g_hexGrid);
 	CallInitUpdate = true;
