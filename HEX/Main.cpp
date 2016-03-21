@@ -8,8 +8,8 @@ std::chrono::high_resolution_clock::time_point beginning = std::chrono::high_res
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow)
 {
 
-	wstring ClassName = { L"H3X" };
-	wstring WindowTitle = {L"H3X: The Game"};
+	wstring ClassName = { L"HEXSTAR" };
+	wstring WindowTitle = {L"Hex*"};
 	int Width = 1000;
 	int Height = 600;
 

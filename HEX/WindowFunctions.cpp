@@ -36,7 +36,7 @@ auto CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRES
 			UndoButton = CreateWindowEx(NULL, L"BUTTON", L"Undo", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 500, 494, 80, 24, hwnd, (HMENU)5, NULL, NULL);
 			//PathButton = CreateWindowEx(NULL, L"BUTTON", L"Path", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 240, 494, 80, 24, hwnd, (HMENU)6, NULL, NULL); //For debugging Please enable this!
 			PieButt = CreateWindowEx(NULL, L"BUTTON", L"Apply Pie rule", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 330, 494, 160, 24, hwnd, (HMENU)7, NULL, NULL);
-			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by H3X: The Game! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
+			ViewList = CreateWindowEx(NULL, L"EDIT", L"Welcome by Hex* ! \r\n", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_CLIPCHILDREN | ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_AUTOVSCROLL, 600, 20, 380, 529, hwnd, (HMENU)2, NULL, NULL);
 		}
 			break;
 		case WM_CTLCOLORSTATIC:
